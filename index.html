@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate-key="page_title">JAFLI Interactive Gaming Platform</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        html[lang="he"] body, html[lang="ar"] body, html[lang="fa"] body {
+            font-family: 'Assistant', 'Cairo', sans-serif;
+        }
+
+        .language-switcher-container {
+            position: fixed;
+            top: 20px;
+            z-index: 1001;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 5px;
+        }
+        html[dir="ltr"] .language-switcher-container { right: 20px; }
+        html[dir="rtl"] .language-switcher-container { left: 20px; }
+
+
+        #language-switcher {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        #language-switcher:focus { outline: none; }
+
+        #language-switcher option {
+            background: #3c3c54;
+            color: white;
+            font-weight: 600;
+        }
+
+        .bg-animation{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;opacity:.1}
+        .floating-shapes{position:absolute;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.1);animation:float 6s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(180deg)}}
+        .header{text-align:center;padding:40px 20px;color:#fff}
+        .header h1{font-size:clamp(2.5rem, 5vw, 4rem);font-weight:300;margin-bottom:10px;text-shadow:2px 2px 8px rgba(0,0,0,.3);animation:slideInDown 1s ease-out}
+        .header p{font-size:clamp(1rem, 2vw, 1.5rem);opacity:.9;animation:fadeIn 1.5s ease-out}
+        @keyframes slideInDown{from{transform:translateY(-50px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        .game-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px;max-width:1200px;margin:0 auto;padding:0 20px}
+        .game-card{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:30px;text-align:center;color:#fff;cursor:pointer;transition:all .4s cubic-bezier(.175,.885,.32,1.275);position:relative;overflow:hidden}
+        .game-card::before{content:'';position:absolute;top:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:all .5s}
+        html[dir="ltr"] .game-card::before { left: -100%; }
+        html[dir="rtl"] .game-card::before { right: -100%; }
+        html[dir="ltr"] .game-card:hover::before { left: 100%; }
+        html[dir="rtl"] .game-card:hover::before { right: 100%; }
+        .game-card:hover{transform:translateY(-10px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.3);background:rgba(255,255,255,.15)}
+        .game-icon{font-size:3rem;margin-bottom:20px;display:block}
+        .game-card h3{font-size:1.4rem;margin-bottom:15px;font-weight:600}
+        .game-card p{font-size:.95rem;opacity:.8;line-height:1.5}
+        .game-container{display:none;min-height:100vh;padding:20px;position:relative}
+        .back-button{position:fixed;top:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3);color:#fff;padding:12px 20px;border-radius:25px;cursor:pointer;font-size:1rem;font-weight:600;transition:all .3s ease;z-index:1000}
+        html[dir="ltr"] .back-button { left: 20px; }
+        html[dir="rtl"] .back-button { right: 20px; }
+        .back-button:hover{background:rgba(255,255,255,.3);transform:translateY(-2px)}
+        .quiz-container{max-width:900px;margin:80px auto 40px;background:rgba(255,255,255,.1);backdrop-filter:blur(15px);padding:30px;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:#fff}
+        .quiz-title{text-align:center;font-size:2rem;margin-bottom:30px;color:#fff}
+        .question{margin-bottom:25px;padding:20px;background:rgba(255,255,255,.05);border-radius:15px;border:1px solid rgba(255,255,255,.1)}
+        .question h3{margin-bottom:15px;font-size:1.1rem;color:#fff}
+        .question input[type="text"]{width:100%;padding:12px 15px;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:1rem;transition:all .3s ease}
+        .question input[type="text"]:focus{outline:0;border-color:#4CAF50;background:rgba(255,255,255,.15)}
+        .question input[type="text"]::placeholder{color:rgba(255,255,255,.6)}
+        .actions{margin-top:12px}
+        .btn{margin-left:10px;margin-right:0;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all .3s ease;font-size:.9rem}
+        html[dir="rtl"] .btn { margin-right: 10px; margin-left: 0; }
+        .btn-primary{background:linear-gradient(135deg,#4CAF50,#45a049);color:#fff}
+        .btn-secondary{background:linear-gradient(135deg,#2196F3,#1976d2);color:#fff}
+        .btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,.3)}
+        .feedback{margin-top:12px;font-weight:700;font-size:.95rem}
+        .correct{color:#4CAF50}.wrong{color:#f44336}
+        .explanation,.answer{margin-top:10px;font-style:italic;color:rgba(255,255,255,.8);background:rgba(255,255,255,.05);padding:10px;border-radius:8px;display:none}
+        .flashcard-container{max-width:800px;margin:80px auto 40px;text-align:center;color:#fff}
+        .progress{margin-bottom:30px;font-weight:700;font-size:1.2rem;color:#fff}
+        .flashcard{width:350px;height:250px;margin:30px auto;perspective:1000px}
+        .card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .8s;cursor:pointer}
+        .card.is-flipped{transform:rotateY(180deg)}
+        .card-face{position:absolute;width:100%;height:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:15px;box-shadow:0 8px 25px rgba(0,0,0,.3);padding:20px;text-align:center}
+        .front{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:1.8rem;font-weight:700}
+        .back{background:rgba(255,255,255,.95);color:#333;transform:rotateY(180deg);font-size:1rem;line-height:1.4}
+        .pronunciation-container{max-width:800px;margin:80px auto 40px;text-align:center;color:#fff;padding:30px}
+        .word-box{font-size:clamp(2rem, 5vw, 4rem);margin:40px 0;color:#4CAF50;font-weight:700;text-shadow:2px 2px 8px rgba(0,0,0,.3)}
+        .pronunciation-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:15px;margin:30px 0}
+        .pronunciation-result{margin-top:30px;font-size:1.1rem;font-weight:700;min-height:80px;padding:20px;background:rgba(255,255,255,.1);border-radius:15px;display:flex;align-items:center;justify-content:center;line-height:1.5;}
+        .pronunciation-details{margin-top:20px;font-size:1rem;color:rgba(255,255,255,.9);background:rgba(255,255,255,.05);padding:20px;border-radius:15px;line-height:1.6}
+        html[dir="ltr"] .pronunciation-details { text-align: left; }
+        html[dir="rtl"] .pronunciation-details { text-align: right; }
+        .matching-container{max-width:1200px;margin:80px auto 40px;padding:20px;color:#fff}
+        .matching-header{text-align:center;margin-bottom:30px}
+        .score-board{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:15px;padding:15px 30px;margin-bottom:20px;color:#fff;font-size:1.2rem;font-weight:700;text-align:center;border:1px solid rgba(255,255,255,.3)}
+        .progress-bar{width:100%;height:10px;background:rgba(255,255,255,.3);border-radius:10px;margin:20px 0;overflow:hidden}
+        .progress-fill{height:100%;background:linear-gradient(90deg,#4CAF50,#8BC34A);border-radius:10px;width:0;transition:width .5s ease}
+        .matching-game-container{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+        .column{display:flex;flex-direction:column;gap:15px}
+        .column-header{text-align:center;color:#fff;font-size:1.3rem;font-weight:700;padding:15px;background:rgba(255,255,255,.1);border-radius:12px;margin-bottom:10px;backdrop-filter:blur(5px)}
+        .word,.target{padding:18px 20px;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:12px;text-align:center;font-size:1.1rem;font-weight:500;cursor:grab;transition:all .3s ease;border:2px solid transparent;color:#fff}
+        .word:hover,.target:hover{transform:translateY(-3px);background:rgba(255,255,255,.15);box-shadow:0 8px 20px rgba(0,0,0,.2)}
+        .word.dragging{opacity:.8;transform:scale(1.05);z-index:1000}
+        .target.drag-over{border-color:#4CAF50;background:rgba(76,175,80,.2)}
+        .matched{background:linear-gradient(135deg,#4CAF50,#45a049)!important;color:#fff!important;cursor:default!important}
+        .wrong{background:linear-gradient(135deg,#f44336,#d32f2f)!important;color:#fff!important;animation:shake .5s ease-in-out}
+        @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+        @media (max-width:768px){.game-menu{grid-template-columns:1fr;gap:20px}.matching-game-container{grid-template-columns:1fr;gap:20px}.flashcard{width:300px;height:200px}.pronunciation-buttons{flex-direction:column;align-items:center}
+        .ladder-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .challenge-options {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .ladder-stats {
+                gap: 8px;
+            }
+
+            .ladder-stat {
+                min-width: 120px;
+                padding: 10px 14px;
+            }
+        }
+        .loading{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:#fff;animation:spin 1s ease-in-out infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        html[dir="ltr"] .matched div { flex-direction: row; }
+        html[dir="rtl"] .matched div { flex-direction: row-reverse; }
+        html[dir="rtl"] .matched span:nth-child(2) { transform: scaleX(-1); }
+        html[dir="rtl"] #matchingSentencesList > div { border-left: none; border-right: 4px solid #4CAF50; }
+
+        /* Language Ladder Styles */
+        .ladder-container {
+            max-width: 1200px;
+            margin: 80px auto 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 28px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+            overflow: hidden;
+            position: relative;
+            color: white;
+        }
+
+        .ladder-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg at 50% 50%, transparent, rgba(255,255,255,0.03), transparent);
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes rotate {
+            to { transform: rotate(360deg); }
+        }
+
+        .ladder-header {
+            padding: 32px 24px 16px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .ladder-header h1 {
+            margin: 0 0 16px;
+            font-size: clamp(24px, 4vw, 42px);
+            font-weight: 900;
+            background: linear-gradient(45deg, #fff, #f0f8ff, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+
+        .ladder-stats {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 16px 0 24px;
+        }
+
+        .ladder-stat {
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12));
+            padding: 14px 20px;
+            border-radius: 18px;
+            min-width: 140px;
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ladder-stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .ladder-stat .num {
+            display: block;
+            font-weight: 900;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .ladder-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .ladder {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 14px;
+        }
+
+        .rung {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12));
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rung::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .rung:hover::before {
+            left: 100%;
+        }
+
+        .rung.completed {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            color: #053a1b;
+            box-shadow: 0 8px 32px rgba(86,171,47,0.3);
+            transform: scale(1.02);
+        }
+
+        .rung.locked {
+            opacity: 0.6;
+            transform: scale(0.98);
+        }
+
+        .rung.current {
+            background: linear-gradient(135deg, #ff9a56, #ffad56);
+            animation: currentRung 3s ease-in-out infinite;
+            box-shadow: 0 0 0 0 rgba(255,154,86,0.7), 0 8px 32px rgba(255,154,86,0.4);
+        }
+
+        @keyframes currentRung {
+            0% { box-shadow: 0 0 0 0 rgba(255,154,86,0.7), 0 8px 32px rgba(255,154,86,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255,154,86,0), 0 12px 40px rgba(255,154,86,0.6); }
+            100% { box-shadow: 0 0 0 0 rgba(255,154,86,0.7), 0 8px 32px rgba(255,154,86,0.4); }
+        }
+
+        .level-number {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            font-size: 18px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .rung.current .level-number {
+            background: linear-gradient(135deg, #ff9a56, #ffad56);
+            box-shadow: 0 0 0 4px rgba(255,154,86,0.3);
+            animation: levelPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes levelPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .rung .progress { /* More specific selector */
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .rung .fill { /* More specific selector */
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a56, #ffad56);
+            width: 0;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .challenge-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12));
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 15px 60px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff9a56, #ffad56, #56ab2f);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .challenge-head {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .challenge-title {
+            font-weight: 900;
+            font-size: 20px;
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .challenge-text {
+            margin: 16px 0 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+            padding: 20px;
+            border-radius: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .challenge-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 16px;
+            color: white;
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.15));
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transition: all 0.4s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .option-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        .option-btn.correct {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            color: #053a1b;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 4px rgba(86,171,47,0.3), 0 8px 32px rgba(86,171,47,0.4);
+            animation: correctBounce 0.6s ease;
+        }
+
+        @keyframes correctBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1.05); }
+        }
+
+        .option-btn.wrong {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            animation: wrongShake 0.6s ease;
+        }
+
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+
+        .speak-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #ff9a56, #ffad56);
+            box-shadow: 0 6px 20px rgba(255,154,86,0.3);
+        }
+
+        .timer-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .timer-bar {
+            height: 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            width: 200px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #56ab2f, #ff9a56, #ff416c);
+            width: 100%;
+            transition: width 1s linear;
+            position: relative;
+        }
+
+        .hint-box {
+            margin-top: 12px;
+            opacity: 0.95;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.2));
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            animation: hintSlide 0.5s ease;
+        }
+
+        @keyframes hintSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 0.95; transform: translateY(0); }
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .ladder-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            place-items: center;
+            z-index: 999;
+            backdrop-filter: blur(8px);
+        }
+
+        .ladder-overlay .box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 32px;
+            border-radius: 28px;
+            text-align: center;
+            max-width: 700px;
+            width: min(95vw, 700px);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 25px 100px rgba(0,0,0,0.5);
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5) translateY(50px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .stars span {
+            position: fixed;
+            font-size: 28px;
+            color: gold;
+            animation: starFall 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: none;
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        @keyframes starFall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(300px) rotate(180deg); opacity: 0; }
+        }
+
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle 2s ease-out forwards;
+        }
+
+        @keyframes particle {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0) translateY(100px); }
+        }
+
+        .mcq-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .mcq-btn {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,.3);
+            background: rgba(255,255,255,.1);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all .3s ease;
+        }
+        html[dir="rtl"] .mcq-btn { text-align: right; }
+        html[dir="ltr"] .mcq-btn { text-align: left; }
+        .mcq-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,.2);
+            border-color: #fff;
+        }
+        .mcq-btn.correct {
+            background: linear-gradient(135deg,#4CAF50,#45a049)!important;
+            border-color: #4CAF50 !important;
+            color: #fff !important;
+            cursor: default;
+        }
+        .mcq-btn.wrong {
+            background: linear-gradient(135deg,#f44336,#d32f2f)!important;
+            border-color: #f44336 !important;
+            color: #fff !important;
+            cursor: default;
+        }
+        .mcq-btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Switcher -->
+    <div class="language-switcher-container">
+        <select id="language-switcher"></select>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="floating-shapes" style="top: 10%; left: 10%; animation-delay: 0s;"></div>
+        <div class="floating-shapes" style="top: 20%; right: 10%; animation-delay: 2s;"></div>
+        <div class="floating-shapes" style="bottom: 20%; left: 20%; animation-delay: 4s;"></div>
+        <div class="floating-shapes" style="bottom: 10%; right: 20%; animation-delay: 1s;"></div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu">
+        <div class="header">
+            <h1 data-translate-key="welcome_title"></h1>
+            <p data-translate-key="welcome_subtitle"></p>
+        </div>
+
+        <div class="game-menu">
+            <div class="game-card" onclick="showGame('grammar')">
+                <span class="game-icon">✔️</span>
+                <h3 data-translate-key="grammar_challenge_title"></h3>
+                <p data-translate-key="grammar_challenge_desc"></p>
+            </div>
+
+            <div class="game-card" onclick="showGame('flashcards')">
+                <span class="game-icon">🃏</span>
+                <h3 data-translate-key="flashcards_title"></h3>
+                <p data-translate-key="flashcards_desc"></p>
+            </div>
+
+            <div class="game-card" onclick="showGame('pronunciation')">
+                <span class="game-icon">🗣️</span>
+                <h3 data-translate-key="pronunciation_title"></h3>
+                <p data-translate-key="pronunciation_desc"></p>
+            </div>
+
+            <div class="game-card" onclick="showGame('matching')">
+                <span class="game-icon">🧩</span>
+                <h3 data-translate-key="matching_title"></h3>
+                <p data-translate-key="matching_desc"></p>
+            </div>
+
+            <div class="game-card" onclick="showGame('ladder')">
+                <span class="game-icon">🪜</span>
+                <h3 data-translate-key="ladder_title"></h3>
+                <p data-translate-key="ladder_desc"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="showMainMenu()" style="display: none;" data-translate-key="back_to_menu"></button>
+
+    <!-- Grammar Game -->
+    <div id="grammarGame" class="game-container">
+        <div class="quiz-container">
+            <h2 class="quiz-title" data-translate-key="grammar_game_title"></h2>
+            <div id="quiz"></div>
+        </div>
+    </div>
+
+    <!-- Flashcards Game -->
+    <div id="flashcardsGame" class="game-container">
+        <div class="flashcard-container">
+            <h1 data-translate-key="flashcards_game_title"></h1>
+            <div class="progress" id="flashcardProgress"></div>
+            <div class="flashcard">
+                <div class="card" id="flashcardCard">
+                    <div class="card-face front" id="flashcardFront"></div>
+                    <div class="card-face back" id="flashcardBack"></div>
+                </div>
+            </div>
+            <div class="pronunciation-buttons">
+                <button class="btn btn-secondary" onclick="prevFlashcard()" data-translate-key="btn_prev"></button>
+                <button class="btn btn-primary" onclick="nextFlashcard()" data-translate-key="btn_next"></button>
+                <button class="btn btn-secondary" onclick="speakFlashcardWord()" data-translate-key="btn_pronounce"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pronunciation Game -->
+    <div id="pronunciationGame" class="game-container">
+        <div class="pronunciation-container">
+            <h1 data-translate-key="pronunciation_game_title"></h1>
+            <div class="word-box" id="pronunciationWordBox"></div>
+            <div class="pronunciation-buttons">
+                <button class="btn btn-secondary" onclick="playPronunciationWord()" data-translate-key="btn_listen"></button>
+                <button class="btn btn-primary" onclick="startPronunciationRecognition()" data-translate-key="btn_speak"></button>
+                <button class="btn btn-secondary" onclick="nextPronunciationWord()" data-translate-key="btn_next_word"></button>
+            </div>
+            <div class="pronunciation-result" id="pronunciationResult"></div>
+            <div class="pronunciation-details" id="pronunciationDetails" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Matching Game -->
+    <div id="matchingGame" class="game-container">
+        <div class="matching-container">
+            <div class="matching-header">
+                <h1 data-translate-key="matching_game_title"></h1>
+                <p data-translate-key="matching_game_subtitle"></p>
+            </div>
+            <div class="score-board">
+                <span id="matchingScore"></span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="matchingProgressFill"></div>
+            </div>
+            <div id="matchingResult" style="display: none; text-align: center; font-size: 2rem; margin: 20px 0; font-weight: bold;"></div>
+            <div class="matching-game-container">
+                <div class="column">
+                    <div class="column-header" data-translate-key="matching_col_words"></div>
+                    <div id="wordsColumn"></div>
+                </div>
+                <div class="column">
+                    <div class="column-header" data-translate-key="matching_col_defs"></div>
+                    <div id="targetsColumn"></div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" id="resetMatchingButton" onclick="resetMatchingGame()" style="display: none;" data-translate-key="btn_play_again"></button>
+            </div>
+            <div id="matchingSentences" style="display: none; margin-top: 30px; background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px;">
+                <h2 style="text-align: center; margin-bottom: 20px;" data-translate-key="matching_sentences_title"></h2>
+                <div id="matchingSentencesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Language Ladder Game -->
+    <div id="ladderGame" class="game-container">
+        <div class="ladder-container">
+            <div class="ladder-header">
+                <h1 data-translate-key="ladder_header"></h1>
+                <div class="ladder-stats">
+                    <div class="ladder-stat"><span class="num" id="levelNum">1 / 5</span><span data-translate-key="ladder_stat_level"></span></div>
+                    <div class="ladder-stat"><span class="num" id="inLevel">0 / 2</span><span data-translate-key="ladder_stat_correct"></span></div>
+                    <div class="ladder-stat"><span class="num" id="totalScore">0</span><span data-translate-key="ladder_stat_score"></span></div>
+                    <div class="ladder-stat"><span class="num" id="streak">0</span><span data-translate-key="ladder_stat_streak"></span></div>
+                    <div class="ladder-stat" id="mistakesStat"><span class="num" id="mistakes">0 / 3</span><span data-translate-key="ladder_stat_mistakes"></span></div>
+                    <div class="ladder-stat timer-display" id="timerStat">
+                        <span>⏳</span>
+                        <div class="timer-bar"><div class="timer-fill" id="timeFill"></div></div>
+                        <span id="timeLeft">15s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ladder-grid">
+                <aside class="challenge-card">
+                    <div class="ladder" id="ladder"></div>
+                </aside>
+
+                <main class="challenge-card" id="challengeCard">
+                    <div class="challenge-head">
+                        <div class="challenge-title" id="challengeTitle" data-translate-key="ladder_challenge_title"></div>
+                        <button class="btn speak-btn" id="speakBtn" title="Pronounce Word" onclick="speakLadderWord()">
+                            <span data-translate-key="ladder_btn_speak"></span> <span class="dot" id="speakDot"></span>
+                        </button>
+                    </div>
+                    <div class="challenge-text" id="challengeQuestion">...</div>
+                    <div class="challenge-options" id="challengeOptions"></div>
+                    <div class="hint-box" id="hintBox" style="display:none"></div>
+                    <div class="toolbar">
+                        <button class="btn" onclick="resetLevel()" data-translate-key="ladder_btn_reset_level"></button>
+                        <button class="btn" onclick="resetLadderGame()" data-translate-key="ladder_btn_reset_game"></button>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Review Overlay -->
+    <div class="ladder-overlay" id="reviewOverlay">
+        <div class="box">
+            <div style="font-size:50px">🧐</div>
+            <h2 data-translate-key="ladder_review_title"></h2>
+            <div class="review-list" id="reviewList" style="max-height:60vh;overflow:auto;text-align:start;background:rgba(255,255,255,.1);padding:16px;border-radius:16px;margin:16px 0;backdrop-filter:blur(10px)"></div>
+            <button class="btn" onclick="closeReviewAndNext()" data-translate-key="ladder_btn_continue"></button>
+        </div>
+    </div>
+
+    <!-- Game Complete Overlay -->
+    <div class="ladder-overlay" id="winOverlay">
+        <div class="box">
+            <div style="font-size:60px">🎉</div>
+            <h2 data-translate-key="ladder_win_title"></h2>
+            <p><span data-translate-key="ladder_win_score"></span> <b id="finalScore">0</b></p>
+            <button class="btn" onclick="closeWin()" data-translate-key="ladder_btn_excellent"></button>
+        </div>
+    </div>
+
+    <!-- Penalty Overlay -->
+    <div class="ladder-overlay" id="penaltyOverlay">
+        <div class="box">
+            <div style="font-size:50px">⏳</div>
+            <h2 data-translate-key="ladder_penalty_title"></h2>
+            <p><span data-translate-key="ladder_penalty_desc_1"></span> <span id="penaltyCount">3</span> <span data-translate-key="ladder_penalty_desc_2"></span></p>
+            <div class="timer-display" style="justify-content: center; margin: 20px 0;">
+                <span>⏳</span>
+                <div class="timer-bar"><div class="timer-fill" id="penaltyTimeFill"></div></div>
+                <span id="penaltyTimeLeft">10s</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STORE ---
+        const languageData = {
+            'en': {
+                name: "English",
+                flag: "🇬🇧",
+                dir: "ltr",
+                langCode: "en-US",
+                translations: {
+                    page_title: "JAFLI Interactive Gaming Platform",
+                    welcome_title: "👋 Welcome to JAFLI Interactive Gaming Platform",
+                    welcome_subtitle: "Master your target language through engaging games and challenges",
+                    grammar_challenge_title: "JAFLI Grammar Challenge",
+                    grammar_challenge_desc: "Test your advanced grammar skills with challenging questions covering various structures.",
+                    flashcards_title: "JAFLI Vocabulary Flashcards",
+                    flashcards_desc: "Master advanced vocabulary with interactive flashcards featuring meanings and examples.",
+                    pronunciation_title: "JAFLI Pronunciation Game",
+                    pronunciation_desc: "Perfect your pronunciation with speech recognition technology and immediate feedback.",
+                    matching_title: "JAFLI Vocabulary Matching",
+                    matching_desc: "Match words with their definitions in this engaging drag-and-drop game.",
+                    back_to_menu: "⬅️ Back to Menu",
+                    grammar_game_title: "✔️ Advanced Grammar Challenge",
+                    flashcards_game_title: "🃏 Advanced Vocabulary Flashcards",
+                    btn_prev: "Previous",
+                    btn_next: "Next",
+                    btn_pronounce: "🔊 Pronounce",
+                    pronunciation_game_title: "🗣️ Advanced Pronunciation Game",
+                    btn_listen: "🔊 Listen",
+                    btn_speak: "🎙️ Speak (10s)",
+                    btn_next_word: "Next Word",
+                    pronunciation_initial_result: "Click 'Listen' first, then try to pronounce the word!",
+                    matching_game_title: "🧩 Vocabulary Matching Challenge",
+                    matching_game_subtitle: "Drag and drop words to their correct definitions",
+                    matching_col_words: "🃏 Vocabulary Words",
+                    matching_col_defs: "📜 Definitions",
+                    btn_play_again: "🔄 Play Again",
+                    matching_sentences_title: "📄 Example Sentences",
+                    input_placeholder: "Enter your answer here...",
+                    btn_check_answer: "Check Answer",
+                    btn_show_answer: "Show Answer",
+                    feedback_correct: "✔️ Excellent! Perfect answer!",
+                    feedback_incorrect: "❌ Not quite right. Try again or check the answer.",
+                    rule_prefix: "Rule:",
+                    answer_prefix: "✔️ Correct Answer:",
+                    flashcard_progress_text: "Card {current} of {total}",
+                    word_face: "Word",
+                    meaning_face: "Meaning & Examples",
+                    speech_recognition_unsupported: "❌ Speech recognition not supported in this browser.",
+                    speech_listening: "🎙️ Listening... ",
+                    speech_times_up: "⌛ Time's up! Try again.",
+                    speech_success: "✔️ Perfect! You said: \"<strong>{spoken}</strong>\"",
+                    speech_success_details: "<strong>Meaning:</strong> {meaning}.<br><strong>Keep practicing!</strong> Try the next word when you're ready.",
+                    speech_fail_header: "Not Quite!",
+                    speech_fail_said: "You said:",
+                    speech_fail_expected: "The correct word is:",
+                    speech_fail_suggestion: "Tip: Click 'Listen' to hear it again clearly, then try to match the sound.",
+                    speech_error: "Error: {error}. Please try again.",
+                    matching_score_text: "Score: {score} / {total}",
+                    matching_correct_connector: "→",
+                    matching_complete_title: "🎉 Congratulations! Game Complete! 🎉",
+                    matching_complete_subtitle: "Accuracy: {accuracy}% ({matched}/{attempts} attempts)",
+                    ladder_title: "JAFLI Language Ladder",
+                    ladder_desc: "Climb the ladder by answering questions, from beginner to expert levels.",
+                    ladder_header: "Climb the Language Ladder",
+                    ladder_stat_level: "Level",
+                    ladder_stat_correct: "Correct in Level",
+                    ladder_stat_score: "Total Score",
+                    ladder_stat_streak: "Streak",
+                    ladder_stat_mistakes: "Mistakes",
+                    ladder_challenge_title: "Challenge Question",
+                    ladder_btn_speak: "Speak",
+                    ladder_btn_reset_level: "Reset Level",
+                    ladder_btn_reset_game: "Reset Game",
+                    ladder_review_title: "Level Review",
+                    ladder_btn_continue: "Continue",
+                    ladder_win_title: "👑 You've Conquered the Ladder! 👑",
+                    ladder_win_score: "Final Score:",
+                    ladder_btn_excellent: "Excellent!",
+                    ladder_penalty_title: "Penalty!",
+                    ladder_penalty_desc_1: "You've made",
+                    ladder_penalty_desc_2: "mistakes in a row. Time for a short break.",
+                },
+                grammarQuestions: [
+                    { q: "1. She ____ (live) in London since 2010.", a: "has lived", exp: "Use the Present Perfect for an action that started in the past and continues to the present." },
+                    { q: "2. If I ____ (be) you, I would study more for the exam.", a: "were", exp: "Use 'were' for the second conditional, which talks about hypothetical situations." },
+                    { q: "3. The Mona Lisa ____ (paint) by Leonardo da Vinci.", a: "was painted", exp: "Use the Passive Voice when the focus is on the action, not the doer." },
+                    { q: "4. He told me he ____ (see) the movie the day before.", a: "had seen", exp: "In reported speech, Past Simple often changes to Past Perfect." },
+                    { q: "5. You ____ (not must) press that button, it's dangerous.", a: "must not", exp: "'Must not' or 'mustn't' is used for prohibition (something you are not allowed to do)." },
+                    { q: "6. I enjoy ____ (read) books in my free time.", a: "reading", exp: "The verb 'enjoy' is followed by a gerund (-ing form)." },
+                    { q: "7. He might ____ (come) to the party if he finishes his work.", a: "come", exp: "Modal verbs like 'might' are followed by the base form of the verb." },
+                    { q: "8. I've been learning English ____ five years.", a: "for", exp: "Use 'for' with a period of time (e.g., five years, two hours)." },
+                    { q: "9. I've been learning English ____ 2018.", a: "since", exp: "Use 'since' with a specific point in time (e.g., 2018, last Tuesday)." },
+                    { q: "10. If it ____ (rain) tomorrow, we will cancel the picnic.", a: "rains", exp: "Use the Present Simple in the 'if' clause of a first conditional sentence." },
+                    { q: "11. He asked me where ____ (I / live).", a: "I lived", exp: "In reported questions, the word order changes to subject + verb, and the tense shifts back." },
+                    { q: "12. This is the house ____ my grandfather was born.", a: "where", exp: "'Where' is a relative pronoun used for places." },
+                    { q: "13. She is used to ____ (get) up early.", a: "getting", exp: "'To be used to' is followed by a gerund (-ing) and means to be accustomed to something." },
+                    { q: "14. I would rather you ____ (not tell) anyone.", a: "didn't tell", exp: "'Would rather' + subject is followed by the past simple to express a preference." },
+                    { q: "15. By the time we arrived, the movie ____ already ____ (start).", a: "had started", exp: "Use the Past Perfect for an action that happened before another past action." },
+                    { q: "16. He is not as tall ____ his brother.", a: "as", exp: "The structure for comparison is 'as + adjective + as'." },
+                    { q: "17. I look forward to ____ (meet) you soon.", a: "meeting", exp: "The phrasal verb 'look forward to' is followed by a gerund (-ing)." },
+                    { q: "18. Have you ever ____ (be) to Japan?", a: "been", exp: "The present perfect form of 'be' is 'been', used here to ask about life experiences." },
+                    { q: "19. The problem is ____ (difficult) than I thought.", a: "more difficult", exp: "For adjectives with two or more syllables, use 'more' to form the comparative." },
+                    { q: "20. I suggest ____ (go) to the cinema tonight.", a: "going", exp: "The verb 'suggest' can be followed by a gerund (-ing)." },
+                    { q: "21. He promised ____ (help) me with my project.", a: "to help", exp: "The verb 'promise' is followed by an infinitive (to + verb)." },
+                    { q: "22. There isn't ____ (some/any) milk left in the fridge.", a: "any", exp: "Use 'any' in negative sentences and questions." },
+                    { q: "23. A lot of new houses ____ (build) in our town recently.", a: "are being built", exp: "Use the Present Continuous Passive for an ongoing action." },
+                    { q: "24. Despite ____ (feel) tired, she went to the gym.", a: "feeling", exp: "'Despite' is followed by a noun or a gerund (-ing)." },
+                    { q: "25. He ____ (work) as a teacher before he became a writer.", a: "had worked", exp: "Use Past Perfect to describe a past action that occurred before another past action." },
+                    { q: "26. What would you do if you ____ (win) the lottery?", a: "won", exp: "In the second conditional, the 'if' clause uses the Past Simple tense." },
+                    { q: "27. I can't help ____ (laugh) when I see that comedy show.", a: "laughing", exp: "The expression 'can't help' is followed by a gerund (-ing)." },
+                    { q: "28. The longer you wait, ____ (bad) it will get.", a: "the worse", exp: "Use 'the + comparative, the + comparative' structure for parallel increase/decrease." },
+                    { q: "29. She accused him of ____ (steal) her wallet.", a: "stealing", exp: "The preposition 'of' is followed by a gerund (-ing)." },
+                    { q: "30. It's no use ____ (cry) over spilled milk.", a: "crying", exp: "The expression 'it's no use' is followed by a gerund (-ing)." },
+                    { q: "31. I wish I ____ (have) more free time these days.", a: "had", exp: "Use the past tense after 'wish' to talk about present situations you would like to be different." },
+                    { q: "32. The car needs ____ (clean).", a: "cleaning", exp: "After 'needs', you can use a gerund to express a passive meaning." },
+                    { q: "33. He must ____ (be) very tired; he's been working all day.", a: "be", exp: "Use 'must + be' for a logical deduction or strong assumption." },
+                    { q: "34. She's the person ____ phone was stolen.", a: "whose", exp: "'Whose' is the possessive relative pronoun." },
+                    { q: "35. If only I ____ (listen) to your advice.", a: "had listened", exp: "'If only' with the past perfect expresses a regret about a past action." },
+                    { q: "36. He denied ____ (know) anything about the plan.", a: "knowing", exp: "The verb 'deny' is followed by a gerund (-ing)." },
+                    { q: "37. This time next week, I ____ (relax) on a beach.", a: "will be relaxing", exp: "Use the Future Continuous for an action that will be in progress at a specific time in the future." },
+                    { q: "38. He is ____ a talented musician.", a: "such", exp: "Use 'such a' before a noun phrase (adjective + noun) to add emphasis." },
+                    { q: "39. The university ____ he studied is famous.", a: "where", exp: "'Where' is used as a relative pronoun for a place." },
+                    { q: "40. I'm not sure, but it ____ (rain) later.", a: "might rain", exp: "Use 'might' to express possibility." },
+                    { q: "41. You'd better ____ (go) now before the traffic gets bad.", a: "go", exp: "'Had better' is a modal expression followed by the base form of the verb, used for strong advice." },
+                    { q: "42. The film wasn't as good ____ I expected.", a: "as", exp: "Use 'as ... as' for comparisons of equality." },
+                    { q: "43. He let me ____ (borrow) his car for the weekend.", a: "borrow", exp: "The verb 'let' is followed by an object and the base form of the verb (infinitive without 'to')." },
+                    { q: "44. It is important ____ (be) on time for the meeting.", a: "to be", exp: "The structure 'it is + adjective' is often followed by an infinitive." },
+                    { q: "45. I managed ____ (finish) the report just in time.", a: "to finish", exp: "The verb 'manage' is followed by an infinitive." },
+                    { q: "46. She was made ____ (apologize) for her mistake.", a: "to apologize", exp: "In the passive form, 'make' is followed by an infinitive with 'to'." },
+                    { q: "47. How long ____ (you/wait) for the bus?", a: "have you been waiting", exp: "Use Present Perfect Continuous for an action that started in the past and is still ongoing, emphasizing duration." },
+                    { q: "48. He is said ____ (be) one of the richest men in the world.", a: "to be", exp: "The passive reporting structure 'is said' is followed by an infinitive." },
+                    { q: "49. I'm tired of ____ (do) the same thing every day.", a: "doing", exp: "The expression 'tired of' is followed by a gerund (-ing)." },
+                    { q: "50. Unless you ____ (study) harder, you will fail the test.", a: "study", exp: "'Unless' means 'if not' and is followed by the present simple in conditional sentences." }
+                ],
+                flashcards: [
+                    { word: "Adequate", meaning: "Sufficient for a specific need or requirement. Example: His skills are adequate for the job." },
+                    { word: "Contribute", meaning: "To give something, such as money, time, or help. Example: Everyone should contribute to the discussion." },
+                    { word: "Demonstrate", meaning: "To show something clearly by giving proof or evidence. Example: The study demonstrates the benefits of exercise." },
+                    { word: "Establish", meaning: "To start or create an organization, system, etc. Example: The company was established in 1990." },
+                    { word: "Feasible", meaning: "Possible to do easily or conveniently. Example: Is it feasible to finish the project by Friday?" },
+                    { word: "Inevitable", meaning: "Certain to happen and impossible to avoid. Example: Change is an inevitable part of life." },
+                    { word: "Justify", meaning: "To show that there is a good reason for something. Example: How can you justify spending so much money?" },
+                    { word: "Negotiate", meaning: "To have a formal discussion to reach an agreement. Example: The government will not negotiate with terrorists." },
+                    { word: "Objective", meaning: "A goal or purpose. Example: My main objective is to improve my English." },
+                    { word: "Perspective", meaning: "A particular way of thinking about something; a point of view. Example: Try to see the issue from a different perspective." },
+                    { word: "Prioritize", meaning: "To decide which of a group of things are the most important. Example: You need to prioritize your tasks." },
+                    { word: "Relevant", meaning: "Directly connected with the subject. Example: Please provide all the relevant documents." },
+                    { word: "Sufficient", meaning: "Enough for a particular purpose. Example: We have sufficient food for the week." },
+                    { word: "Tendency", meaning: "An inclination to behave in a certain way. Example: He has a tendency to exaggerate." },
+                    { word: "Valid", meaning: "Based on truth or reason; acceptable. Example: You make a valid point." },
+                    { word: "Voluntary", meaning: "Done, made, or given willingly. Example: She does a lot of voluntary work at the hospital." },
+                    { word: "Yield", meaning: "To produce or provide something, like a profit or a result. Example: The investment should yield a high return." },
+                    { word: "Anxious", meaning: "Feeling worried, nervous, or afraid. Example: I'm anxious about the upcoming exam." },
+                    { word: "Bizarre", meaning: "Very strange or unusual. Example: She was wearing a bizarre hat." },
+                    { word: "Coherent", meaning: "Logical and well-organized; easy to understand. Example: He gave a coherent explanation of the events." },
+                    { word: "Diligent", meaning: "Showing care and effort in your work or duties. Example: She is a very diligent student." },
+                    { word: "Emerge", meaning: "To appear or come out from somewhere. Example: The sun emerged from behind the clouds." },
+                    { word: "Flexible", meaning: "Able to change or be changed easily. Example: My work schedule is quite flexible." },
+                    { word: "Grasp", meaning: "To understand something completely. Example: I couldn't grasp what he was trying to say." },
+                    { word: "Hesitate", meaning: "To be slow to speak or act because you feel uncertain. Example: Don't hesitate to ask for help." },
+                    { word: "Implement", meaning: "To put a plan or system into operation. Example: We need to implement the new security measures." },
+                    { word: "Legitimate", meaning: "Allowed and acceptable according to the law. Example: It was a legitimate business." },
+                    { word: "Modify", meaning: "To change something slightly. Example: We may need to modify the design." },
+                    { word: "Notion", meaning: "An idea, belief, or opinion. Example: I don't agree with the notion that money buys happiness." },
+                    { word: "Omit", meaning: "To leave something out, either intentionally or by mistake. Example: Please don't omit any details." },
+                    { word: "Plausible", meaning: "Reasonable and likely to be true. Example: Her story sounds plausible to me." },
+                    { word: "Quote", meaning: "To repeat the exact words that someone else has said or written. Example: Can I quote you on that?" },
+                    { word: "Reluctant", meaning: "Not willing to do something. Example: He was reluctant to admit he was wrong." },
+                    { word: "Spontaneous", meaning: "Happening or done in a natural, often sudden way, without any planning. Example: It was a spontaneous decision to go to the beach." },
+                    { word: "Tackle", meaning: "To make a determined effort to deal with a difficult problem. Example: We need to tackle the issue of pollution." },
+                    { word: "Undergo", meaning: "To experience something, especially a change or something unpleasant. Example: The patient had to undergo surgery." },
+                    { word: "Vast", meaning: "Extremely large in area, size, amount, etc. Example: The internet is a vast source of information." },
+                    { word: "Widespread", meaning: "Existing or happening in many places or among many people. Example: There is widespread support for the new law." },
+                    { word: "Abundant", meaning: "Existing in large quantities; more than enough. Example: The country has abundant natural resources." },
+                    { word: "Clarify", meaning: "To make something clearer or easier to understand. Example: Could you clarify your last point?" },
+                    { word: "Depict", meaning: "To represent or show something in a picture or story. Example: The painting depicts a scene from the war." },
+                    { word: "Enhance", meaning: "To improve the quality, value, or strength of something. Example: A good sauce will enhance the flavor of the meat." },
+                    { word: "Frustrate", meaning: "To make someone feel annoyed or less confident because they cannot achieve what they want. Example: It frustrates me that I can't speak French fluently." },
+                    { word: "Generate", meaning: "To produce or create something. Example: The new power plant will generate more electricity." },
+                    { word: "Hazardous", meaning: "Dangerous, especially to people's health or safety. Example: These chemicals are hazardous to the environment." },
+                    { word: "Intuition", meaning: "The ability to understand something immediately, without the need for conscious reasoning. Example: My intuition told me not to trust him." },
+                    { word: "Linger", meaning: "To stay somewhere for a long time. Example: The smell of perfume lingered in the air." },
+                    { word: "Mundane", meaning: "Very ordinary and therefore not interesting. Example: He was tired of his mundane, everyday routine." },
+                    { word: "Nostalgia", meaning: "A feeling of pleasure and also slight sadness when you think about things that happened in the past. Example: The old photos filled me with nostalgia." },
+                    { word: "Overwhelm", meaning: "To have such a strong emotional effect on somebody that it is difficult for them to resist or know how to react. Example: I was overwhelmed by all the support I received." }
+                ],
+                matchingWords: [
+                    { word: "Appreciate", match: "To recognize the good qualities of somebody/something", sentence: "I really <span class='red'>appreciate</span> all the help you've given me." },
+                    { word: "Assume", match: "To think that something is true, without proof", sentence: "I <span class='red'>assume</span> you'll be at the meeting tomorrow." },
+                    { word: "Benefit", match: "An advantage that something gives you", sentence: "What is the main <span class='red'>benefit</span> of this new system?" },
+                    { word: "Capable", match: "Having the ability or qualities to do something", sentence: "She is <span class='red'>capable</span> of handling the situation on her own." },
+                    { word: "Concern", match: "A feeling of worry, especially one that is shared by many people", sentence: "The lack of clean water is a major <span class='red'>concern</span> for the community." },
+                    { word: "Decade", match: "A period of ten years", sentence: "The company has grown significantly over the last <span class='red'>decade</span>." },
+                    { word: "Efficient", match: "Doing something well and thoroughly with no waste of time, money, or energy", sentence: "The new machine is much more <span class='red'>efficient</span> than the old one." },
+                    { word: "Gradually", match: "Slowly, over a long period of time", sentence: "The weather <span class='red'>gradually</span> improved throughout the day." },
+                    { word: "Impact", match: "The powerful effect that something has on somebody/something", sentence: "The new law will have a significant <span class='red'>impact</span> on our business." },
+                    { word: "Initial", match: "Happening at the beginning; first", sentence: "My <span class='red'>initial</span> reaction was one of surprise." },
+                    { word: "Major", match: "Very large or important", sentence: "She underwent <span class='red'>major</span> surgery last month." },
+                    { word: "Obvious", match: "Easy to see or understand", sentence: "The solution to the problem was <span class='red'>obvious</span> to everyone." },
+                    { word: "Potential", match: "The possibility of something happening or being developed", sentence: "The new product has great <span class='red'>potential</span> for success." },
+                    { word: "Significant", match: "Large or important enough to have an effect", sentence: "There has been a <span class='red'>significant</span> increase in sales." },
+                    { word: "Typical", match: "Having the usual qualities or features of a particular type of person, thing, or group", sentence: "It was a <span class='red'>typical</span> English summer day - cloudy and a bit rainy." }
+                ],
+                ladderLevels: [
+                    { id: 1, icon: "🥑", title: "Beginner", description: "Basic essential words", challenges: [
+                        { word: "Happy", question: "Choose the best synonym for 'Happy':", options: ["Sad", "Joyful", "Angry", "Tired"], correct: 1, hint: "A feeling of contentment, pleasure, or joy." },
+                        { word: "Big", question: "Choose the best synonym for 'Big':", options: ["Small", "Large", "Thin", "Short"], correct: 1, hint: "Having great size, extent, or intensity." }
+                    ]},
+                    { id: 2, icon: "📝", title: "Basic", description: "Daily life vocabulary", challenges: [
+                        { word: "Smart", question: "Choose the best synonym for 'Smart':", options: ["Stupid", "Intelligent", "Lazy", "Slow"], correct: 1, hint: "Having or showing a quick-witted intelligence." },
+                        { word: "Fast", question: "Choose the best synonym for 'Fast':", options: ["Slow", "Quick", "Late", "Heavy"], correct: 1, hint: "Moving or capable of moving at high speed." }
+                    ]},
+                    { id: 3, icon: "🧠", title: "Intermediate", description: "Diverse expressions", challenges: [
+                        { word: "Courageous", question: "Choose the best synonym for 'Courageous':", options: ["Cowardly", "Brave", "Weak", "Fearful"], correct: 1, hint: "Not deterred by danger or pain; showing readiness to face and endure danger." },
+                        { word: "Generous", question: "Choose the best synonym for 'Generous':", options: ["Selfish", "Kind", "Greedy", "Mean"], correct: 1, hint: "Showing a readiness to give more than is strictly necessary or expected." }
+                    ]},
+                    { id: 4, icon: "🎓", title: "Advanced", description: "Complex concepts", challenges: [
+                        { word: "Meticulous", question: "Choose the best synonym for 'Meticulous':", options: ["Careless", "Careful", "Rushed", "Sloppy"], correct: 1, hint: "Showing great attention to detail; very careful and precise." },
+                        { word: "Profound", question: "Choose the best synonym for 'Profound':", options: ["Shallow", "Deep", "Simple", "Surface"], correct: 1, hint: "Very great or intense; having deep insight or understanding." }
+                    ]},
+                    { id: 5, icon: "👑", title: "Expert", description: "Specialized terms", challenges: [
+                        { word: "Eloquent", question: "Choose the best synonym for 'Eloquent':", options: ["Speechless", "Articulate", "Mumbling", "Silent"], correct: 1, hint: "Fluent and persuasive in speaking or writing." },
+                        { word: "Tenacious", question: "Choose the best synonym for 'Tenacious':", options: ["Giving up", "Persistent", "Quitting", "Weak"], correct: 1, hint: "Tending to keep a firm hold; not readily letting go; determined." }
+                    ]}
+                ]
+            },
+            'fr': {
+                name: "Français",
+                flag: "🇫🇷",
+                dir: "ltr",
+                langCode: "fr-FR",
+                translations: {
+                    ladder_title: "Échelle Linguistique JAFLI",
+                    ladder_desc: "Montez à l'échelle en répondant à des questions, du niveau débutant à expert.",
+                    ladder_header: "Montez à l'échelle linguistique",
+                    ladder_stat_level: "Niveau",
+                    ladder_stat_correct: "Corrects par Niveau",
+                    ladder_stat_score: "Score Total",
+                    ladder_stat_streak: "Série",
+                    ladder_stat_mistakes: "Erreurs",
+                    ladder_challenge_title: "Question Défi",
+                    ladder_btn_speak: "Parler",
+                    ladder_btn_reset_level: "Réinitialiser le Niveau",
+                    ladder_btn_reset_game: "Réinitialiser le Jeu",
+                    ladder_review_title: "Revue du Niveau",
+                    ladder_btn_continue: "Continuer",
+                    ladder_win_title: "👑 Vous avez conquis l'échelle ! 👑",
+                    ladder_win_score: "Score Final :",
+                    ladder_btn_excellent: "Excellent !",
+                    ladder_penalty_title: "Pénalité !",
+                    ladder_penalty_desc_1: "Vous avez fait",
+                    ladder_penalty_desc_2: "erreurs d'affilée. Il est temps pour une courte pause.",
+                    page_title: "JAFLI - Plateforme de Jeux Interactifs",
+                    welcome_title: "👋 Bienvenue sur la Plateforme de Jeux Interactifs JAFLI",
+                    welcome_subtitle: "Maîtrisez votre langue cible avec des jeux et défis captivants",
+                    grammar_challenge_title: "Défi de Grammaire JAFLI",
+                    grammar_challenge_desc: "Testez vos compétences en grammaire avec des questions difficiles sur diverses structures.",
+                    flashcards_title: "Cartes de Vocabulaire JAFLI",
+                    flashcards_desc: "Maîtrisez du vocabulaire avancé avec des cartes interactives, incluant sens et exemples.",
+                    pronunciation_title: "Jeu de Prononciation JAFLI",
+                    pronunciation_desc: "Perfectionnez votre prononciation avec la reconnaissance vocale et un retour immédiat.",
+                    matching_title: "Jeu d'Association de Vocabulaire",
+                    matching_desc: "Associez des mots à leurs définitions dans ce jeu de glisser-déposer.",
+                    back_to_menu: "⬅️ Retour au Menu",
+                    grammar_game_title: "✔️ Défi de Grammaire Avancée",
+                    flashcards_game_title: "🃏 Cartes de Vocabulaire Avancé",
+                    btn_prev: "Précédent",
+                    btn_next: "Suivant",
+                    btn_pronounce: "🔊 Prononcer",
+                    pronunciation_game_title: "🗣️ Jeu de Prononciation Avancée",
+                    btn_listen: "🔊 Écouter",
+                    btn_speak: "🎙️ Parler (10s)",
+                    btn_next_word: "Mot Suivant",
+                    pronunciation_initial_result: "Cliquez sur 'Écouter', puis essayez de prononcer le mot !",
+                    matching_game_title: "🧩 Défi d'Association de Vocabulaire",
+                    matching_game_subtitle: "Glissez et déposez les mots sur leurs définitions correctes",
+                    matching_col_words: "🃏 Mots de Vocabulaire",
+                    matching_col_defs: "📜 Définitions",
+                    btn_play_again: "🔄 Rejouer",
+                    matching_sentences_title: "📄 Phrases d'Exemple",
+                    input_placeholder: "Entrez votre réponse ici...",
+                    btn_check_answer: "Vérifier",
+                    btn_show_answer: "Afficher la réponse",
+                    feedback_correct: "✔️ Excellent ! Réponse parfaite !",
+                    feedback_incorrect: "❌ Incorrect. Réessayez ou vérifiez la réponse.",
+                    rule_prefix: "Règle :",
+                    answer_prefix: "✔️ Réponse Correcte :",
+                    flashcard_progress_text: "Carte {current} sur {total}",
+                    word_face: "Mot",
+                    meaning_face: "Sens & Exemples",
+                    speech_recognition_unsupported: "❌ Reconnaissance vocale non supportée sur ce navigateur.",
+                    speech_listening: "🎙️ Écoute en cours... ",
+                    speech_times_up: "⌛ Temps écoulé ! Réessayez.",
+                    speech_success: "✔️ Parfait ! Vous avez dit : \"<strong>{spoken}</strong>\"",
+                    speech_success_details: "<strong>Sens :</strong> {meaning}.<br><strong>Continuez à pratiquer !</strong>",
+                    speech_fail_header: "Pas tout à fait !",
+                    speech_fail_said: "Vous avez dit :",
+                    speech_fail_expected: "Le mot correct est :",
+                    speech_fail_suggestion: "Conseil : Cliquez sur 'Écouter' pour l'entendre clairement, puis essayez d'imiter le son.",
+                    speech_error: "Erreur : {error}. Veuillez réessayer.",
+                    matching_score_text: "Score : {score} / {total}",
+                    matching_correct_connector: "→",
+                    matching_complete_title: "🎉 Félicitations ! Jeu terminé ! 🎉",
+                    matching_complete_subtitle: "Précision : {accuracy}% ({matched}/{attempts} tentatives)",
+                },
+                grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: []
+            },
+            'es': {
+                name: "Español",
+                flag: "🇪🇸",
+                dir: "ltr",
+                langCode: "es-ES",
+                translations: {
+                    page_title: "JAFLI - Plataforma de Juegos Interactivos",
+                    welcome_title: "👋 Bienvenido a la Plataforma de Juegos Interactivos JAFLI",
+                    welcome_subtitle: "Domina tu idioma objetivo con juegos y desafíos atractivos",
+                    grammar_challenge_title: "Desafío de Gramática JAFLI",
+                    grammar_challenge_desc: "Pon a prueba tus habilidades gramaticales con preguntas desafiantes sobre diversas estructuras.",
+                    flashcards_title: "Tarjetas de Vocabulario JAFLI",
+                    flashcards_desc: "Domina vocabulario avanzado con tarjetas interactivas con significados y ejemplos.",
+                    pronunciation_title: "Juego de Pronunciación JAFLI",
+                    pronunciation_desc: "Perfecciona tu pronunciación con tecnología de reconocimiento de voz y feedback inmediato.",
+                    matching_title: "Juego de Coincidencia de Vocabulario",
+                    matching_desc: "Une palabras con sus definiciones en este atractivo juego de arrastrar y soltar.",
+                    back_to_menu: "⬅️ Volver al Menú",
+                    grammar_game_title: "✔️ Desafío de Gramática Avanzada",
+                    flashcards_game_title: "🃏 Tarjetas de Vocabulario Avanzado",
+                    btn_prev: "Anterior",
+                    btn_next: "Siguiente",
+                    btn_pronounce: "🔊 Pronunciar",
+                    pronunciation_game_title: "🗣️ Juego de Pronunciación Avanzada",
+                    btn_listen: "🔊 Escuchar",
+                    btn_speak: "🎙️ Hablar (10s)",
+                    btn_next_word: "Siguiente Palabra",
+                    pronunciation_initial_result: "¡Haz clic en 'Escuchar' primero, luego intenta pronunciar la palabra!",
+                    matching_game_title: "🧩 Desafío de Coincidencia de Vocabulario",
+                    matching_game_subtitle: "Arrastra y suelta las palabras en sus definiciones correctas",
+                    matching_col_words: "🃏 Palabras de Vocabulario",
+                    matching_col_defs: "📜 Definiciones",
+                    btn_play_again: "🔄 Jugar de Nuevo",
+                    matching_sentences_title: "📄 Frases de Ejemplo",
+                    input_placeholder: "Escribe tu respuesta aquí...",
+                    btn_check_answer: "Comprobar",
+                    btn_show_answer: "Mostrar Respuesta",
+                    feedback_correct: "✔️ ¡Excelente! ¡Respuesta perfecta!",
+                    feedback_incorrect: "❌ Incorrecto. Inténtalo de nuevo o comprueba la respuesta.",
+                    rule_prefix: "Regla:",
+                    answer_prefix: "✔️ Respuesta Correcta:",
+                    flashcard_progress_text: "Tarjeta {current} de {total}",
+                    word_face: "Palabra",
+                    meaning_face: "Significado y Ejemplos",
+                    speech_recognition_unsupported: "❌ El reconocimiento de voz no es compatible con este navegador.",
+                    speech_listening: "🎙️ Escuchando... ",
+                    speech_times_up: "⌛ ¡Tiempo agotado! Inténtalo de nuevo.",
+                    speech_success: "✔️ ¡Perfecto! Dijiste: \"<strong>{spoken}</strong>\"",
+                    speech_success_details: "<strong>Significado:</strong> {meaning}.<br><strong>¡Sigue practicando!</strong>",
+                    speech_fail_header: "¡Casi!",
+                    speech_fail_said: "Dijiste:",
+                    speech_fail_expected: "La palabra correcta es:",
+                    speech_fail_suggestion: "Consejo: Haz clic en 'Escuchar' para oírla claramente, luego intenta imitar el sonido.",
+                    speech_error: "Error: {error}. Por favor, inténtalo de nuevo.",
+                    matching_score_text: "Puntuación: {score} / {total}",
+                    matching_correct_connector: "→",
+                    matching_complete_title: "🎉 ¡Felicidades! ¡Juego completado! 🎉",
+                    matching_complete_subtitle: "Precisión: {accuracy}% ({matched}/{attempts} intentos)",
+                    ladder_title: "Dominó Lingüístico JAFLI",
+                    ladder_desc: "Asciende en el dominó respondiendo preguntas, desde niveles de principiante hasta experto.",
+                    ladder_header: "Asciende en el Dominó Lingüístico",
+                    ladder_stat_level: "Nivel",
+                    ladder_stat_correct: "Correctas en Nivel",
+                    ladder_stat_score: "Puntuación Total",
+                    ladder_stat_streak: "Racha",
+                    ladder_stat_mistakes: "Errores",
+                    ladder_challenge_title: "Pregunta del Desafío",
+                    ladder_btn_speak: "Hablar",
+                    ladder_btn_reset_level: "Reiniciar Nivel",
+                    ladder_btn_reset_game: "Reiniciar Juego",
+                    ladder_review_title: "Revisión del Nivel",
+                    ladder_btn_continue: "Continuar",
+                    ladder_win_title: "👑 ¡Has Conquistado el Dominó! 👑",
+                    ladder_win_score: "Puntuación Final:",
+                    ladder_btn_excellent: "¡Excelente!",
+                    ladder_penalty_title: "¡Penalización!",
+                    ladder_penalty_desc_1: "Has cometido",
+                    ladder_penalty_desc_2: "errores seguidos. Tiempo para un breve descanso.",
+                },
+                grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: []
+            },
+            'de': { name: "Deutsch", flag: "🇩🇪", dir: "ltr", langCode: "de-DE", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] },
+            'it': { name: "Italiano", flag: "🇮🇹", dir: "ltr", langCode: "it-IT", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] },
+            'pt': { name: "Português", flag: "🇵🇹", dir: "ltr", langCode: "pt-PT", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] },
+            'ru': { name: "Русский", flag: "🇷🇺", dir: "ltr", langCode: "ru-RU", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] },
+            'ar': {
+                name: "العربية",
+                flag: "🇸🇦",
+                dir: "rtl",
+                langCode: "ar-SA",
+                translations: {
+                    page_title: "منصة الألعاب التفاعلية JAFLI",
+                    welcome_title: "👋 أهلاً بك في منصة الألعاب التفاعلية JAFLI",
+                    welcome_subtitle: "أتقن لغتك المستهدفة من خلال الألعاب والتحديات الممتعة",
+                    grammar_challenge_title: "تحدي القواعد اللغوية من JAFLI",
+                    grammar_challenge_desc: "اختبر مهاراتك المتقدمة في القواعد من خلال أسئلة صعبة تغطي تراكيب متنوعة.",
+                    flashcards_title: "بطاقات المفردات من JAFLI",
+                    flashcards_desc: "أتقن المفردات المتقدمة باستخدام بطاقات تفاعلية تتضمن المعاني والأمثلة.",
+                    pronunciation_title: "لعبة النطق من JAFLI",
+                    pronunciation_desc: "أتقن نطقك مع تقنية التعرف على الكلام واحصل على تقييم فوري.",
+                    matching_title: "لعبة مطابقة المفردات",
+                    matching_desc: "طابق الكلمات بتعريفاتها في لعبة السحب والإفلات الممتعة هذه.",
+                    ladder_title: "سُلّم اللغة من JAFLI",
+                    ladder_desc: "اصعد السلم بالإجابة على الأسئلة، من مستوى المبتدئين إلى الخبراء.",
+                    back_to_menu: "➡️ العودة إلى القائمة",
+                    grammar_game_title: "✔️ تحدي القواعد المتقدم",
+                    flashcards_game_title: "🃏 بطاقات المفردات المتقدمة",
+                    btn_prev: "السابق",
+                    btn_next: "التالي",
+                    btn_pronounce: "🔊 نطق",
+                    pronunciation_game_title: "🗣️ لعبة النطق المتقدمة",
+                    btn_listen: "🔊 استماع",
+                    btn_speak: "🎙️ تحدث (10 ثوانٍ)",
+                    btn_next_word: "الكلمة التالية",
+                    pronunciation_initial_result: "انقر على 'استماع' أولاً، ثم حاول نطق الكلمة!",
+                    matching_game_title: "🧩 تحدي مطابقة المفردات",
+                    matching_game_subtitle: "اسحب وأفلت الكلمات على تعريفاتها الصحيحة",
+                    matching_col_words: "🃏 بطاقات المفردات",
+                    matching_col_defs: "📜 التعريفات",
+                    btn_play_again: "🔄 العب مرة أخرى",
+                    matching_sentences_title: "📄 جمل أمثلة",
+                    input_placeholder: "أدخل إجابتك هنا...",
+                    btn_check_answer: "تحقق من الإجابة",
+                    btn_show_answer: "أظهر الإجابة",
+                    feedback_correct: "✔️ ممتاز! إجابة صحيحة!",
+                    feedback_incorrect: "❌ غير صحيح. حاول مرة أخرى أو تحقق من الإجابة.",
+                    rule_prefix: "القاعدة:",
+                    answer_prefix: "✔️ الإجابة الصحيحة:",
+                    flashcard_progress_text: "البطاقة {current} من {total}",
+                    word_face: "الكلمة",
+                    meaning_face: "المعنى والأمثلة",
+                    speech_recognition_unsupported: "❌ خاصية التعرف على الكلام غير مدعومة في هذا المتصفح.",
+                    speech_listening: "🎙️ جارٍ الاستماع...",
+                    speech_times_up: "⌛ انتهى الوقت! حاول مرة أخرى.",
+                    speech_success: "✔️ ممتاز! لقد قلت: \"<strong>{spoken}</strong>\"",
+                    speech_success_details: "<strong>المعنى:</strong> {meaning}.<br><strong>استمر في التدريب!</strong>",
+                    speech_fail_header: "ليس تماماً!",
+                    speech_fail_said: "لقد قلت:",
+                    speech_fail_expected: "الكلمة الصحيحة هي:",
+                    speech_fail_suggestion: "نصيحة: انقر على 'استماع' لسماعها بوضوح مرة أخرى، ثم حاول تقليد الصوت.",
+                    speech_error: "خطأ: {error}. يرجى المحاولة مرة أخرى.",
+                    matching_score_text: "النتيجة: {score} / {total}",
+                    matching_correct_connector: "→",
+                    matching_complete_title: "🎉 تهانينا! لقد أكملت اللعبة! 🎉",
+                    matching_complete_subtitle: "الدقة: {accuracy}% ({matched}/{attempts} محاولة)",
+                    ladder_header: "اصعد سُلّم اللغة",
+                    ladder_stat_level: "المستوى",
+                    ladder_stat_correct: "إجابات صحيحة في المستوى",
+                    ladder_stat_score: "النتيجة الإجمالية",
+                    ladder_stat_streak: "سلسلة متتالية",
+                    ladder_stat_mistakes: "أخطاء",
+                    ladder_challenge_title: "سؤال التحدي",
+                    ladder_btn_speak: "تحدث",
+                    ladder_btn_reset_level: "إعادة المستوى",
+                    ladder_btn_reset_game: "إعادة اللعبة",
+                    ladder_review_title: "مراجعة المستوى",
+                    ladder_btn_continue: "متابعة",
+                    ladder_win_title: "👑 لقد تغلبت على السلم! 👑",
+                    ladder_win_score: "النتيجة النهائية:",
+                    ladder_btn_excellent: "ممتاز!",
+                    ladder_penalty_title: "عقوبة!",
+                    ladder_penalty_desc_1: "لقد ارتكبت",
+                    ladder_penalty_desc_2: "أخطاء متتالية. حان وقت استراحة قصيرة.",
+                },
+                grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: []
+            },
+            'he': { name: "עברית", flag: "🇮🇱", dir: "rtl", langCode: "he-IL", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] },
+            'fa': { name: "فارسی", flag: "🇮🇷", dir: "rtl", langCode: "fa-IR", translations: {}, grammarQuestions: [], flashcards: [], matchingWords: [], ladderLevels: [] }
+        };
+
+        // --- CORE LOGIC ---
+        let currentLanguage = 'en';
+        let currentGrammarQuestion = 0;
+        let currentFlashcard = 0;
+        let currentPronunciationWord = 0;
+        let speechRecognition;
+        let grammarQuestions, flashcards, matchingWordsData, ladderLevels;
+
+        // --- DOM ELEMENTS ---
+        const languageSwitcher = document.getElementById('language-switcher');
+        const mainMenu = document.getElementById('mainMenu');
+        const backButton = document.querySelector('.back-button');
+
+        // Game Containers
+        const grammarGame = document.getElementById('grammarGame');
+        const flashcardsGame = document.getElementById('flashcardsGame');
+        const pronunciationGame = document.getElementById('pronunciationGame');
+        const matchingGame = document.getElementById('matchingGame');
+        const ladderGame = document.getElementById('ladderGame');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initLanguageSwitcher();
+            const savedLang = localStorage.getItem('jafliLang') || 'en';
+            setLanguage(savedLang);
+            setupSpeechRecognition();
+        });
+
+        // --- LANGUAGE FUNCTIONS ---
+        function initLanguageSwitcher() {
+            for (const langCode in languageData) {
+                const option = document.createElement('option');
+                option.value = langCode;
+                option.textContent = `${languageData[langCode].flag} ${languageData[langCode].name}`;
+                languageSwitcher.appendChild(option);
+            }
+            languageSwitcher.addEventListener('change', (e) => setLanguage(e.target.value));
+        }
+
+        function setLanguage(langCode) {
+            currentLanguage = langCode;
+            localStorage.setItem('jafliLang', langCode);
+            languageSwitcher.value = langCode;
+
+            const lang = languageData[langCode];
+            document.documentElement.lang = langCode;
+            document.documentElement.dir = lang.dir;
+
+            // Deep merge placeholder game data if missing
+            if (!lang.grammarQuestions || lang.grammarQuestions.length === 0) {
+                lang.grammarQuestions = languageData['en'].grammarQuestions;
+            }
+            if (!lang.flashcards || lang.flashcards.length === 0) {
+                lang.flashcards = languageData['en'].flashcards;
+            }
+            if (!lang.matchingWords || lang.matchingWords.length === 0) {
+                lang.matchingWords = languageData['en'].matchingWords;
+            }
+            if (!lang.ladderLevels || lang.ladderLevels.length === 0) {
+                lang.ladderLevels = languageData['en'].ladderLevels;
+            }
+             // Deep merge placeholder translations if missing
+            for (const key in languageData['en'].translations) {
+                if (!lang.translations[key]) {
+                    lang.translations[key] = languageData['en'].translations[key];
+                }
+            }
+
+
+            grammarQuestions = lang.grammarQuestions;
+            flashcards = lang.flashcards;
+            matchingWordsData = lang.matchingWords;
+            ladderLevels = lang.ladderLevels;
+
+            translateUI();
+            resetAllGames();
+        }
+
+        function translateUI() {
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.getAttribute('data-translate-key');
+                if (languageData[currentLanguage].translations[key]) {
+                    el.innerHTML = languageData[currentLanguage].translations[key];
+                }
+            });
+        }
+
+        function _(key, replacements = {}) {
+            let translation = languageData[currentLanguage].translations[key] || key;
+            for (const placeholder in replacements) {
+                translation = translation.replace(`{${placeholder}}`, replacements[placeholder]);
+            }
+            return translation;
+        }
+
+        // --- NAVIGATION ---
+        function showGame(gameId) {
+            mainMenu.style.display = 'none';
+            backButton.style.display = 'block';
+            document.getElementById(`${gameId}Game`).style.display = 'block';
+
+            switch(gameId) {
+                case 'grammar': initGrammarGame(); break;
+                case 'flashcards': initFlashcardsGame(); break;
+                case 'pronunciation': initPronunciationGame(); break;
+                case 'matching': initMatchingGame(); break;
+                case 'ladder': initLadderGame(); break;
+            }
+        }
+
+        function showMainMenu() {
+            mainMenu.style.display = 'block';
+            backButton.style.display = 'none';
+            document.querySelectorAll('.game-container').forEach(el => el.style.display = 'none');
+            resetAllGames();
+        }
+
+        function resetAllGames() {
+            // Reset states for all games
+            currentGrammarQuestion = 0;
+            currentFlashcard = 0;
+            currentPronunciationWord = 0;
+            if (speechRecognition) speechRecognition.stop();
+            // Clear game-specific containers
+            document.getElementById('quiz').innerHTML = '';
+            // ... any other specific resets
+        }
+
+        // --- GRAMMAR GAME ---
+        function initGrammarGame() {
+            const quizContainer = document.getElementById('quiz');
+            quizContainer.innerHTML = '';
+            grammarQuestions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                questionDiv.innerHTML = `
+                    <h3>${q.q}</h3>
+                    <input type="text" id="q${index}" placeholder="${_('input_placeholder')}" autocomplete="off">
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="checkAnswer(${index})">${_('btn_check_answer')}</button>
+                        <button class="btn btn-secondary" onclick="showAnswer(${index})">${_('btn_show_answer')}</button>
+                    </div>
+                    <div class="feedback" id="feedback${index}"></div>
+                    <div class="explanation" id="explanation${index}"></div>
+                    <div class="answer" id="answer${index}"></div>
+                `;
+                quizContainer.appendChild(questionDiv);
+            });
+        }
+
+        function checkAnswer(index) {
+            const userAnswer = document.getElementById(`q${index}`).value.trim();
+            const feedback = document.getElementById(`feedback${index}`);
+            if (userAnswer.toLowerCase() === grammarQuestions[index].a.toLowerCase()) {
+                feedback.textContent = _('feedback_correct');
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = _('feedback_incorrect');
+                feedback.className = 'feedback wrong';
+            }
+        }
+
+        function showAnswer(index) {
+            const explanation = document.getElementById(`explanation${index}`);
+            const answer = document.getElementById(`answer${index}`);
+            explanation.innerHTML = `${_('rule_prefix')} ${grammarQuestions[index].exp}`;
+            answer.innerHTML = `${_('answer_prefix')} ${grammarQuestions[index].a}`;
+            explanation.style.display = 'block';
+            answer.style.display = 'block';
+        }
+
+        // --- FLASHCARDS GAME ---
+        function initFlashcardsGame() {
+            currentFlashcard = 0;
+            displayFlashcard();
+        }
+
+        function displayFlashcard() {
+            const card = flashcards[currentFlashcard];
+            document.getElementById('flashcardFront').innerHTML = `<span data-translate-key="word_face" style="font-size:0.8rem;opacity:0.7;display:block;margin-bottom:10px;">${_('word_face')}</span>${card.word}`;
+            document.getElementById('flashcardBack').innerHTML = `<strong data-translate-key="meaning_face" style="font-size:1.1rem;display:block;margin-bottom:10px;">${_('meaning_face')}</strong>${card.meaning}`;
+            document.getElementById('flashcardProgress').textContent = _('flashcard_progress_text', {current: currentFlashcard + 1, total: flashcards.length});
+            document.getElementById('flashcardCard').classList.remove('is-flipped');
+            document.getElementById('flashcardCard').addEventListener('click', () => {
+                document.getElementById('flashcardCard').classList.toggle('is-flipped');
+            }, { once: true });
+        }
+
+        function nextFlashcard() {
+            currentFlashcard = (currentFlashcard + 1) % flashcards.length;
+            displayFlashcard();
+        }
+
+        function prevFlashcard() {
+            currentFlashcard = (currentFlashcard - 1 + flashcards.length) % flashcards.length;
+            displayFlashcard();
+        }
+
+        function speakFlashcardWord() {
+            const word = flashcards[currentFlashcard].word;
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = languageData[currentLanguage].langCode;
+            speechSynthesis.speak(utterance);
+        }
+
+        // --- PRONUNCIATION GAME ---
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                document.getElementById('pronunciationResult').textContent = _('speech_recognition_unsupported');
+                return;
+            }
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.continuous = false;
+            speechRecognition.lang = languageData[currentLanguage].langCode;
+            speechRecognition.interimResults = false;
+            speechRecognition.maxAlternatives = 1;
+
+            speechRecognition.onresult = (event) => {
+                const spoken = event.results[0][0].transcript;
+                const correctWord = flashcards[currentPronunciationWord].word;
+                const meaning = flashcards[currentPronunciationWord].meaning;
+
+                if (spoken.trim().toLowerCase() === correctWord.toLowerCase()) {
+                    document.getElementById('pronunciationResult').innerHTML = _('speech_success', {spoken: spoken});
+                    document.getElementById('pronunciationDetails').innerHTML = _('speech_success_details', {meaning: meaning});
+                } else {
+                    document.getElementById('pronunciationResult').innerHTML = `<strong>${_('speech_fail_header')}</strong>`;
+                    document.getElementById('pronunciationDetails').innerHTML = `
+                        ${_('speech_fail_said')}: "<strong>${spoken}</strong>"<br>
+                        ${_('speech_fail_expected')}: "<strong>${correctWord}</strong>"<br><br>
+                        <em>${_('speech_fail_suggestion')}</em>`;
+                }
+                document.getElementById('pronunciationDetails').style.display = 'block';
+            };
+
+            speechRecognition.onspeechend = () => {
+                speechRecognition.stop();
+            };
+
+            speechRecognition.onerror = (event) => {
+                let errorMsg = event.error;
+                if (event.error === 'no-speech') {
+                    errorMsg = _('speech_times_up');
+                }
+                document.getElementById('pronunciationResult').textContent = _('speech_error', {error: errorMsg});
+                document.getElementById('pronunciationDetails').style.display = 'none';
+            };
+        }
+
+        function initPronunciationGame() {
+            currentPronunciationWord = 0;
+            displayPronunciationWord();
+            document.getElementById('pronunciationResult').textContent = _('pronunciation_initial_result');
+            document.getElementById('pronunciationDetails').style.display = 'none';
+        }
+
+        function displayPronunciationWord() {
+            document.getElementById('pronunciationWordBox').textContent = flashcards[currentPronunciationWord].word;
+        }
+
+        function playPronunciationWord() {
+            const word = flashcards[currentPronunciationWord].word;
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = languageData[currentLanguage].langCode;
+            speechSynthesis.speak(utterance);
+        }
+
+        function startPronunciationRecognition() {
+            if (speechRecognition) {
+                speechRecognition.lang = languageData[currentLanguage].langCode;
+                speechRecognition.start();
+                document.getElementById('pronunciationResult').textContent = _('speech_listening');
+                document.getElementById('pronunciationDetails').style.display = 'none';
+            }
+        }
+
+        function nextPronunciationWord() {
+            currentPronunciationWord = (currentPronunciationWord + 1) % flashcards.length;
+            displayPronunciationWord();
+            document.getElementById('pronunciationResult').textContent = _('pronunciation_initial_result');
+            document.getElementById('pronunciationDetails').style.display = 'none';
+        }
+
+        // --- MATCHING GAME ---
+        let words, targets, draggedItem, score, attempts, total;
+
+        function initMatchingGame() {
+            const wordsColumn = document.getElementById('wordsColumn');
+            const targetsColumn = document.getElementById('targetsColumn');
+
+            wordsColumn.innerHTML = '';
+            targetsColumn.innerHTML = '';
+            document.getElementById('matchingResult').style.display = 'none';
+            document.getElementById('resetMatchingButton').style.display = 'none';
+            document.getElementById('matchingSentences').style.display = 'none';
+            document.getElementById('matchingSentencesList').innerHTML = '';
+            document.getElementById('matchingProgressFill').style.width = '0%';
+
+            score = 0;
+            attempts = 0;
+            total = matchingWordsData.length;
+
+            const shuffledWords = [...matchingWordsData].sort(() => 0.5 - Math.random());
+            const shuffledTargets = [...matchingWordsData].sort(() => 0.5 - Math.random());
+
+            words = shuffledWords.map((item, i) => ({...item, id: `w${i}`}));
+            targets = shuffledTargets.map((item, i) => ({...item, id: `t${i}`}));
+
+            words.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'word';
+                div.textContent = item.word;
+                div.draggable = true;
+                div.dataset.id = item.id;
+                div.dataset.word = item.word;
+                wordsColumn.appendChild(div);
+            });
+
+            targets.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'target';
+                div.textContent = item.match;
+                div.dataset.id = item.id;
+                div.dataset.word = item.word;
+                targetsColumn.appendChild(div);
+            });
+
+            updateScore();
+            addDragListeners();
+        }
+
+        function updateScore() {
+            document.getElementById('matchingScore').textContent = _('matching_score_text', {score: score, total: total});
+            document.getElementById('matchingProgressFill').style.width = `${(score / total) * 100}%`;
+        }
+
+        function addDragListeners() {
+            document.querySelectorAll('.word').forEach(item => {
+                item.addEventListener('dragstart', dragStart);
+                item.addEventListener('dragend', dragEnd);
+            });
+            document.querySelectorAll('.target').forEach(item => {
+                item.addEventListener('dragover', dragOver);
+                item.addEventListener('dragleave', dragLeave);
+                item.addEventListener('drop', drop);
+            });
+        }
+
+        function dragStart(e) {
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        }
+
+        function dragEnd(e) {
+            draggedItem.classList.remove('dragging');
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            if (!e.target.classList.contains('matched')) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function dragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            e.target.classList.remove('drag-over');
+
+            if (e.target.classList.contains('matched')) return;
+
+            attempts++;
+            const draggedWord = draggedItem.dataset.word;
+            const targetWord = e.target.dataset.word;
+
+            if (draggedWord === targetWord) {
+                score++;
+                draggedItem.classList.add('matched');
+                e.target.classList.add('matched');
+
+                const sentence = matchingWordsData.find(w => w.word === draggedWord).sentence;
+                const sentenceDiv = document.createElement('div');
+                sentenceDiv.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);';
+                sentenceDiv.innerHTML = `<div style="flex:1;"><b>${draggedWord}</b> ${_('matching_correct_connector')} ${e.target.textContent}</div><div style="flex:2;font-style:italic;color:rgba(255,255,255,0.8);">${sentence.replace(new RegExp(draggedWord, 'g'), `<strong style="color:#4CAF50;">${draggedWord}</strong>`)}</div>`;
+                document.getElementById('matchingSentencesList').appendChild(sentenceDiv);
+
+                draggedItem.draggable = false;
+                e.target.removeEventListener('dragover', dragOver);
+                e.target.removeEventListener('dragleave', dragLeave);
+                e.target.removeEventListener('drop', drop);
+                updateScore();
+            } else {
+                e.target.classList.add('wrong');
+                setTimeout(() => e.target.classList.remove('wrong'), 500);
+            }
+
+            if (score === total) {
+                const accuracy = Math.round((total / attempts) * 100);
+                const resultEl = document.getElementById('matchingResult');
+                resultEl.innerHTML = `
+                    <h2>${_('matching_complete_title')}</h2>
+                    <p>${_('matching_complete_subtitle', {accuracy: accuracy, matched: total, attempts: attempts})}</p>
+                `;
+                resultEl.style.display = 'block';
+                document.getElementById('resetMatchingButton').style.display = 'inline-block';
+                document.getElementById('matchingSentences').style.display = 'block';
+            }
+        }
+
+        function resetMatchingGame() {
+            initMatchingGame();
+        }
+
+        // --- LANGUAGE LADDER GAME ---
+        const ladderState = {
+            level: 0,
+            score: 0,
+            streak: 0,
+            mistakes: 0,
+            correctInLevel: 0,
+            currentChallenge: null,
+            timer: null,
+            timeLeft: 15,
+            penaltyTimer: null,
+            isPenalty: false,
+        };
+
+        function initLadderGame() {
+            Object.assign(ladderState, {
+                level: 0, score: 0, streak: 0, mistakes: 0,
+                correctInLevel: 0, currentChallenge: null,
+                timer: null, timeLeft: 15, penaltyTimer: null, isPenalty: false,
+            });
+            buildLadder();
+            startLevel();
+            updateStats();
+        }
+
+        function buildLadder() {
+            const ladderEl = document.getElementById('ladder');
+            ladderEl.innerHTML = '';
+            ladderLevels.forEach(level => {
+                const rung = document.createElement('div');
+                rung.className = 'rung';
+                rung.id = `rung-${level.id}`;
+                rung.innerHTML = `
+                    <div class="level-number">${level.icon}</div>
+                    <div style="flex:1">
+                        <strong>${level.title}</strong>
+                        <div class="description">${level.description}</div>
+                    </div>
+                `;
+                ladderEl.appendChild(rung);
+            });
+        }
+
+        function startLevel() {
+            ladderState.correctInLevel = 0;
+            updateRungStatus();
+            nextChallenge();
+        }
+
+        function nextChallenge() {
+            if (ladderState.correctInLevel >= ladderLevels[ladderState.level].challenges.length) {
+                levelComplete();
+                return;
+            }
+
+            ladderState.currentChallenge = ladderLevels[ladderState.level].challenges[ladderState.correctInLevel];
+            displayChallenge();
+            startTimer();
+        }
+
+        function displayChallenge() {
+            const challenge = ladderState.currentChallenge;
+            document.getElementById('challengeQuestion').textContent = challenge.question;
+            const optionsContainer = document.getElementById('challengeOptions');
+            optionsContainer.innerHTML = '';
+            challenge.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => selectAnswer(index);
+                optionsContainer.appendChild(btn);
+            });
+            document.getElementById('hintBox').style.display = 'none';
+        }
+
+        function selectAnswer(selectedIndex) {
+            clearTimeout(ladderState.timer);
+            const challenge = ladderState.currentChallenge;
+            const options = document.getElementById('challengeOptions').children;
+
+            for(let i=0; i<options.length; i++) {
+                options[i].disabled = true;
+                if(i === challenge.correct) options[i].classList.add('correct');
+            }
+
+            if (selectedIndex === challenge.correct) {
+                options[selectedIndex].classList.add('correct');
+                ladderState.score += 10 + ladderState.streak;
+                ladderState.streak++;
+                ladderState.mistakes = 0;
+                ladderState.correctInLevel++;
+                updateStats();
+                setTimeout(nextChallenge, 1500);
+            } else {
+                options[selectedIndex].classList.add('wrong');
+                ladderState.streak = 0;
+                ladderState.mistakes++;
+                updateStats();
+                document.getElementById('hintBox').innerHTML = `💡 <strong>Hint:</strong> ${challenge.hint}`;
+                document.getElementById('hintBox').style.display = 'block';
+                if (ladderState.mistakes >= 3) {
+                    applyPenalty();
+                } else {
+                    setTimeout(nextChallenge, 2500);
+                }
+            }
+        }
+
+        function startTimer() {
+            ladderState.timeLeft = 15;
+            const timeFill = document.getElementById('timeFill');
+            const timeLeftEl = document.getElementById('timeLeft');
+
+            clearTimeout(ladderState.timer);
+
+            function tick() {
+                ladderState.timeLeft--;
+                timeLeftEl.textContent = `${ladderState.timeLeft}s`;
+                timeFill.style.width = `${(ladderState.timeLeft / 15) * 100}%`;
+
+                if (ladderState.timeLeft <= 0) {
+                    timeUp();
+                } else {
+                    ladderState.timer = setTimeout(tick, 1000);
+                }
+            }
+            tick();
+        }
+
+        function timeUp() {
+            const options = document.getElementById('challengeOptions').children;
+            const challenge = ladderState.currentChallenge;
+            options[challenge.correct].classList.add('correct');
+            for(let i=0; i<options.length; i++) options[i].disabled = true;
+
+            ladderState.streak = 0;
+            ladderState.mistakes++;
+            updateStats();
+             if (ladderState.mistakes >= 3) {
+                applyPenalty();
+            } else {
+                setTimeout(nextChallenge, 2500);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('levelNum').textContent = `${ladderState.level + 1} / ${ladderLevels.length}`;
+            document.getElementById('inLevel').textContent = `${ladderState.correctInLevel} / ${ladderLevels[ladderState.level].challenges.length}`;
+            document.getElementById('totalScore').textContent = ladderState.score;
+            document.getElementById('streak').textContent = ladderState.streak;
+            document.getElementById('mistakes').textContent = `${ladderState.mistakes} / 3`;
+        }
+
+        function updateRungStatus() {
+            document.querySelectorAll('.rung').forEach(r => r.classList.remove('current', 'completed', 'locked'));
+            for(let i = 0; i < ladderLevels.length; i++) {
+                const rung = document.getElementById(`rung-${ladderLevels[i].id}`);
+                if (i < ladderState.level) {
+                    rung.classList.add('completed');
+                } else if (i === ladderState.level) {
+                    rung.classList.add('current');
+                } else {
+                    rung.classList.add('locked');
+                }
+            }
+        }
+
+        function levelComplete() {
+            if (ladderState.level < ladderLevels.length - 1) {
+                ladderState.level++;
+                startLevel();
+            } else {
+                gameComplete();
+            }
+        }
+
+        function gameComplete() {
+            document.getElementById('finalScore').textContent = ladderState.score;
+            document.getElementById('winOverlay').style.display = 'grid';
+        }
+
+        function closeWin() {
+            document.getElementById('winOverlay').style.display = 'none';
+            initLadderGame();
+        }
+
+        function applyPenalty() {
+            document.getElementById('penaltyOverlay').style.display = 'grid';
+            let penaltyTime = 10;
+            const penaltyTimeFill = document.getElementById('penaltyTimeFill');
+            const penaltyTimeLeft = document.getElementById('penaltyTimeLeft');
+
+            clearTimeout(ladderState.penaltyTimer);
+
+            function penaltyTick() {
+                penaltyTime--;
+                penaltyTimeLeft.textContent = `${penaltyTime}s`;
+                penaltyTimeFill.style.width = `${(penaltyTime / 10) * 100}%`;
+
+                if (penaltyTime <= 0) {
+                    document.getElementById('penaltyOverlay').style.display = 'none';
+                    ladderState.mistakes = 0;
+                    updateStats();
+                    nextChallenge();
+                } else {
+                    ladderState.penaltyTimer = setTimeout(penaltyTick, 1000);
+                }
+            }
+            penaltyTick();
+        }
+
+        function resetLevel() {
+            ladderState.score -= ladderState.correctInLevel * 5; // Penalty for resetting
+            if(ladderState.score < 0) ladderState.score = 0;
+            startLevel();
+            updateStats();
+        }
+
+        function resetLadderGame() {
+            initLadderGame();
+        }
+
+        function speakLadderWord() {
+            if (!ladderState.currentChallenge) return;
+            const utterance = new SpeechSynthesisUtterance(ladderState.currentChallenge.word);
+            utterance.lang = languageData[currentLanguage].langCode;
+            speechSynthesis.speak(utterance);
+        }
+
+    </script>
+</body>
+</html>
