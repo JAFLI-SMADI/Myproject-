@@ -755,6 +755,7 @@
                     <option value="all">الكل</option>
                     <option value="ممرض قانوني">ممرض قانوني</option>
                     <option value="ممرض مشارك">ممرض مشارك</option>
+                    <option value="stoppages_outside">توقيفات خارج البرنامج</option>
                 </select>
             </div>
 
@@ -1380,7 +1381,20 @@
 
             const classFilter = document.getElementById('classFilterSchedule').value;
 
-            let filteredOfficers = officers.filter(o => classFilter === 'all' || o.class === classFilter);
+            let filteredOfficers;
+
+            if (classFilter === 'stoppages_outside') {
+                filteredOfficers = officers.filter(officer => {
+                    if (!schedule[officer.number]) {
+                        return false;
+                    }
+                    // Check if all 7 days have shift '4'
+                    return days.every(day => schedule[officer.number][day] === '4');
+                });
+            } else {
+                filteredOfficers = officers.filter(o => classFilter === 'all' || o.class === classFilter);
+            }
+
 
             filteredOfficers.forEach(officer => {
                 if (!schedule[officer.number]) schedule[officer.number] = {};
