@@ -42,6 +42,8 @@
             display: block;
             margin: 0 auto 15px auto;
             width: 150px;
+            height: 150px; /* Set a container height */
+            object-fit: contain; /* Ensure the image fits without being cropped */
         }
 
         .header h1 {
@@ -1183,7 +1185,7 @@
 
                 const logoSection = document.createElement('div');
                 logoSection.style.textAlign = 'right';
-                logoSection.innerHTML = `<img src="${logoBase64}" alt="شعار" style="width: 100px; height: auto;">`;
+                logoSection.innerHTML = `<img src="${logoBase64}" alt="شعار" style="width: 100px; height: 100px; object-fit: contain;">`;
 
                 // The order matters for RTL: Title on the right, Logo on the left for print
                 printHeader.appendChild(logoSection);
