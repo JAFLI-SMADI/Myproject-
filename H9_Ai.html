@@ -1,0 +1,3292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة مناوبات المرتب</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #2c5aa0, #1e3a5f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: linear-gradient(45deg, #2c5aa0, #1e3a5f);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #2c5aa0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .officers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .officer-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .officer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .schedule-table th, .schedule-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(45deg, #2c5aa0, #1e3a5f);
+            color: white;
+            font-weight: bold;
+        }
+
+        .schedule-table td {
+            background: white;
+            vertical-align: middle; /* Align content vertically */
+        }
+
+        .table-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ddd;
+        }
+
+        .shift-1 { background-color: #d4edda !important; color: #155724; }
+        .shift-2 { background-color: #cce5ff !important; color: #004085; }
+        .shift-3 { background-color: #fff3cd !important; color: #856404; }
+        .shift-4 { background-color: #f8d7da !important; color: #721c24; }
+        .shift-4 { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
+
+        .shift-select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .print-only-shift, .print-only-table {
+            display: none;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .summary-card h3 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .summary-card p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .week-summary {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .class-section {
+            margin-bottom: 30px;
+        }
+
+        .class-title {
+            background: linear-gradient(45deg, #2c5aa0, #1e3a5f);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .day-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+
+        .day-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .shift-counts {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .shift-count {
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .alert {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+
+            .days-grid,
+            .officers-grid,
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 { font-size: 2em; }
+            .header p { font-size: 1em; }
+            body { padding: 10px; }
+
+            /* Stack form and tools containers */
+            #officers > div[style*="display: flex"] {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            /* Allow date inputs and filters to wrap */
+            #schedule > div[style*="display: flex"] {
+                flex-wrap: wrap;
+                gap: 10px !important;
+            }
+
+            /* Make wide tables horizontally scrollable */
+            .schedule-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .schedule-table th, .schedule-table td {
+                padding: 8px 5px;
+                font-size: 0.9em;
+            }
+        }
+
+        /* New, unified print styling */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Hide everything in the body by default when printing */
+            body.printing > *:not(.print-section-container) {
+                display: none !important;
+            }
+
+            /* The print container itself is invisible until printing starts */
+            .print-section-container {
+                display: none;
+            }
+
+            /* When printing, only show the print container */
+            body.printing .print-section-container {
+                display: block !important;
+            }
+
+            /* General cleanup for anything inside the printed content */
+            .print-section-container .btn,
+            .print-section-container button,
+            .print-section-container .shift-select,
+            .print-section-container .report-footer,
+            .print-section-container .page-actions,
+            .print-section-container .modal-close-btn,
+            .print-section-container input,
+            .print-section-container select {
+                display: none !important;
+            }
+
+            /* Ensure specific print-only elements are visible */
+            .print-section-container .print-only-shift {
+                display: inline !important;
+                font-weight: bold;
+            }
+            .print-section-container .officers-grid {
+                display: none !important;
+            }
+            .print-section-container .print-only-table,
+            .print-section-container .schedule-table {
+                display: table !important;
+                width: 100%;
+            }
+
+            /* Show text from inputs inside the print view */
+            .print-section-container input[type="text"] {
+                display: inline !important;
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+
+            /* Ensure table headers repeat on each page */
+            .print-section-container thead {
+                display: table-header-group !important;
+            }
+
+            /* Ensure the tfoot (with signatures) appears at the very end */
+            .print-section-container tfoot {
+                display: table-footer-group !important;
+            }
+
+            /* Prevent elements from breaking across pages */
+            .print-section-container .officer-card,
+            .print-section-container .schedule-table tr,
+            .print-section-container .summary-card,
+            .print-section-container .report-card-container,
+            .print-section-container .day-card,
+            .print-section-container .signature-block {
+                page-break-inside: avoid !important;
+            }
+
+            .print-section-container h1,
+            .print-section-container h2,
+            .print-section-container h3,
+            .print-section-container .class-title {
+                page-break-after: avoid !important;
+            }
+
+            /* This is the new rule for the date range header */
+            .print-date-header {
+                display: block !important; /* Make it visible for printing */
+                text-align: center;
+                font-size: 1.2em;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+
+             /* Fix for summary section breaking between pages */
+            .week-summary, .class-section {
+                page-break-inside: avoid;
+            }
+        }
+
+        .pdf-export-mode {
+            background: white; /* Ensure a clean background for PDF */
+        }
+        .pdf-export-mode .container {
+             box-shadow: none;
+             max-width: 100%;
+        }
+        .pdf-export-mode .week-summary, .pdf-export-mode .class-section {
+            page-break-inside: avoid;
+        }
+
+        /* Styles for Modals (shared) */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            position: relative;
+            max-width: 1000px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            background-color: #fefefe;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+        .modal-close-btn {
+            position: absolute; /* Changed from sticky to work better in modal */
+            top: 20px;
+            right: 20px; /* RTL friendly */
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            line-height: 36px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 1100;
+            transition: all 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            background: #ce1126;
+            transform: rotate(90deg);
+        }
+
+        /* Scoped Styles for Instructions Content */
+        #instructionsModal .container { margin: 0; border-radius: 25px; box-shadow: none; border: none; animation: none; }
+        #instructionsModal .header { background: linear-gradient(135deg, #007a3d 0%, #000 50%, #ce1126 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden; }
+        #instructionsModal .header::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); animation: rotate 20s linear infinite; }
+        #instructionsModal .header h1 { font-size: 2.5rem; font-weight: 900; color: white; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); margin-bottom: 10px; position: relative; z-index: 1; }
+        #instructionsModal .header .subtitle { font-size: 1.1rem; color: rgba(255, 255, 255, 0.9); font-weight: 300; position: relative; z-index: 1; }
+        #instructionsModal .content { padding: 40px; }
+        #instructionsModal .step { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border-left: 8px solid; position: relative; transition: all 0.3s ease; }
+        #instructionsModal .step:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
+        #instructionsModal .step.step-1 { border-left-color: #007a3d; background: linear-gradient(135deg, rgba(0, 122, 61, 0.05) 0%, white 100%); }
+        #instructionsModal .step.step-2 { border-left-color: #ce1126; background: linear-gradient(135deg, rgba(206, 17, 38, 0.05) 0%, white 100%); }
+        #instructionsModal .step.step-3 { border-left-color: #000; background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, white 100%); }
+        #instructionsModal .step-header { display: flex; align-items: center; margin-bottom: 20px; }
+        #instructionsModal .step-number { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white; margin-left: 20px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); flex-shrink: 0; }
+        #instructionsModal .step-1 .step-number { background: linear-gradient(135deg, #007a3d, #00a84f); }
+        #instructionsModal .step-2 .step-number { background: linear-gradient(135deg, #ce1126, #ff1744); }
+        #instructionsModal .step-3 .step-number { background: linear-gradient(135deg, #000, #424242); }
+        #instructionsModal .step h2 { font-size: 1.8rem; font-weight: 700; color: #333; }
+        #instructionsModal .step p { font-size: 1.1rem; line-height: 1.8; color: #666; margin-bottom: 15px; }
+        #instructionsModal .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        #instructionsModal .feature-item { background: rgba(255, 255, 255, 0.7); border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 15px; padding: 20px; text-align: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        #instructionsModal .feature-item::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transition: left 0.5s; }
+        #instructionsModal .feature-item:hover::before { left: 100%; }
+        #instructionsModal .feature-item:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); border-color: #007a3d; }
+        #instructionsModal .feature-item .icon { font-size: 2rem; margin-bottom: 10px; display: block; }
+        #instructionsModal .shifts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin: 20px 0; }
+        #instructionsModal .shift-card { background: white; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); border: 3px solid transparent; background-clip: padding-box; transition: all 0.3s ease; position: relative; }
+        #instructionsModal .shift-card::before { content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 18px; background: linear-gradient(45deg, #007a3d, #ce1126, #000); z-index: -1; opacity: 0; transition: opacity 0.3s ease; }
+        #instructionsModal .shift-card:hover::before { opacity: 1; }
+        #instructionsModal .shift-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); }
+        #instructionsModal .shift-card .shift-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        #instructionsModal .shift-card h3 { font-size: 1.3rem; font-weight: 600; color: #333; }
+        #instructionsModal .warning-box { background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 3px solid #ce1126; border-radius: 20px; padding: 30px; margin: 30px 0; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(206, 17, 38, 0.2); }
+        #instructionsModal .warning-box::before { content: '⚠️'; position: absolute; top: -20px; right: -20px; font-size: 5rem; opacity: 0.1; transform: rotate(15deg); }
+        #instructionsModal .warning-box h3 { font-size: 1.4rem; color: #ce1126; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; }
+        #instructionsModal .warning-box h3::before { content: '⚠️'; margin-left: 10px; font-size: 1.5rem; }
+        #instructionsModal .warning-box p { font-size: 1.1rem; color: #b8860b; line-height: 1.7; font-weight: 500; }
+        #instructionsModal .footer { background: linear-gradient(135deg, #007a3d 0%, #000 50%, #ce1126 100%); padding: 40px; text-align: center; color: white; position: relative; }
+        #instructionsModal .footer::before { content: '🇯🇴'; position: absolute; top: 20px; right: 30px; font-size: 3rem; opacity: 0.3; }
+        #instructionsModal .footer h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        #instructionsModal .footer p { font-size: 1.2rem; line-height: 1.8; color: rgba(255, 255, 255, 0.9); }
+        #instructionsModal .team-members { display: flex; justify-content: center; gap: 40px; margin-top: 20px; flex-wrap: wrap; }
+        #instructionsModal .member { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; transition: all 0.3s ease; }
+        #instructionsModal .member:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
+        #instructionsModal .member .rank { font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 5px; }
+        #instructionsModal .member .name { font-size: 1.1rem; font-weight: 600; color: white; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+
+        /* Toast Notification Styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.5s ease;
+        }
+        .toast.hide {
+            opacity: 0;
+            transform: translateX(120%);
+        }
+        .toast.success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+        .toast.error {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        /* Styles for Instructions Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: flex-start; /* Aligns to top, allows scrolling */
+            padding-top: 5vh;
+            backdrop-filter: blur(5px);
+            overflow-y: auto;
+        }
+        .modal-content {
+            position: relative;
+            max-width: 1000px;
+            width: 95%;
+            background-color: #fefefe;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+        .modal-close-btn {
+            position: sticky;
+            top: 15px;
+            left: 15px; /* RTL friendly */
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            line-height: 36px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 1100;
+            transition: all 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            background: #ce1126;
+            transform: rotate(90deg);
+        }
+
+        /* Scoped Styles for Instructions Content */
+        #instructionsModal .container { font-family: 'Cairo', sans-serif; margin: 0; border-radius: 25px; box-shadow: none; border: none; animation: none; max-width: 100%; background: rgba(255, 255, 255, 0.95); }
+        #instructionsModal .header { background: linear-gradient(135deg, #007a3d 0%, #000 50%, #ce1126 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden; }
+        #instructionsModal .header::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); animation: rotate 20s linear infinite; }
+        #instructionsModal .header h1 { font-size: 2.5rem; font-weight: 900; color: white; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); margin-bottom: 10px; position: relative; z-index: 1; }
+        #instructionsModal .header .subtitle { font-size: 1.1rem; color: rgba(255, 255, 255, 0.9); font-weight: 300; position: relative; z-index: 1; }
+        #instructionsModal .content { padding: 40px; }
+        #instructionsModal .step { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border-left: 8px solid; position: relative; transition: all 0.3s ease; }
+        #instructionsModal .step:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
+        #instructionsModal .step.step-1 { border-left-color: #007a3d; background: linear-gradient(135deg, rgba(0, 122, 61, 0.05) 0%, white 100%); }
+        #instructionsModal .step.step-2 { border-left-color: #ce1126; background: linear-gradient(135deg, rgba(206, 17, 38, 0.05) 0%, white 100%); }
+        #instructionsModal .step.step-3 { border-left-color: #000; background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, white 100%); }
+        #instructionsModal .step-header { display: flex; align-items: center; margin-bottom: 20px; }
+        #instructionsModal .step-number { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white; margin-left: 20px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); flex-shrink: 0; }
+        #instructionsModal .step-1 .step-number { background: linear-gradient(135deg, #007a3d, #00a84f); }
+        #instructionsModal .step-2 .step-number { background: linear-gradient(135deg, #ce1126, #ff1744); }
+        #instructionsModal .step-3 .step-number { background: linear-gradient(135deg, #000, #424242); }
+        #instructionsModal .step h2 { font-size: 1.8rem; font-weight: 700; color: #333; }
+        #instructionsModal .step p { font-size: 1.1rem; line-height: 1.8; color: #666; margin-bottom: 15px; }
+        #instructionsModal .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        #instructionsModal .feature-item { background: rgba(255, 255, 255, 0.7); border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 15px; padding: 20px; text-align: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        #instructionsModal .feature-item::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transition: left 0.5s; }
+        #instructionsModal .feature-item:hover::before { left: 100%; }
+        #instructionsModal .feature-item:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); border-color: #007a3d; }
+        #instructionsModal .feature-item .icon { font-size: 2rem; margin-bottom: 10px; display: block; }
+        #instructionsModal .shifts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin: 20px 0; }
+        #instructionsModal .shift-card { background: white; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); border: 3px solid transparent; background-clip: padding-box; transition: all 0.3s ease; position: relative; }
+        #instructionsModal .shift-card::before { content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 18px; background: linear-gradient(45deg, #007a3d, #ce1126, #000); z-index: -1; opacity: 0; transition: opacity 0.3s ease; }
+        #instructionsModal .shift-card:hover::before { opacity: 1; }
+        #instructionsModal .shift-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); }
+        #instructionsModal .shift-card .shift-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        #instructionsModal .shift-card h3 { font-size: 1.3rem; font-weight: 600; color: #333; }
+        #instructionsModal .warning-box { background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 3px solid #ce1126; border-radius: 20px; padding: 30px; margin: 30px 0; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(206, 17, 38, 0.2); }
+        #instructionsModal .warning-box::before { content: '⚠️'; position: absolute; top: -20px; right: -20px; font-size: 5rem; opacity: 0.1; transform: rotate(15deg); }
+        #instructionsModal .warning-box h3 { font-size: 1.4rem; color: #ce1126; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; }
+        #instructionsModal .warning-box h3::before { content: '⚠️'; margin-left: 10px; font-size: 1.5rem; }
+        #instructionsModal .warning-box p { font-size: 1.1rem; color: #b8860b; line-height: 1.7; font-weight: 500; }
+        #instructionsModal .footer { background: linear-gradient(135deg, #007a3d 0%, #000 50%, #ce1126 100%); padding: 40px; text-align: center; color: white; position: relative; }
+        #instructionsModal .footer::before { content: '🇯🇴'; position: absolute; top: 20px; right: 30px; font-size: 3rem; opacity: 0.3; }
+        #instructionsModal .footer h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        #instructionsModal .footer p { font-size: 1.2rem; line-height: 1.8; color: rgba(255, 255, 255, 0.9); }
+        #instructionsModal .team-members { display: flex; justify-content: center; gap: 40px; margin-top: 20px; flex-wrap: wrap; }
+        #instructionsModal .member { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; transition: all 0.3s ease; }
+        #instructionsModal .member:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
+        #instructionsModal .member .rank { font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 5px; }
+        #instructionsModal .member .name { font-size: 1.1rem; font-weight: 600; color: white; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Styles for Report Card Modal */
+        .report-card-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .report-header h1 {
+            color: #2c5aa0;
+            font-size: 2rem;
+        }
+        .report-header p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        .report-body {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+        .report-details h3, .report-schedule h3 {
+            color: #2c5aa0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .report-details p {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .report-schedule .schedule-table {
+            margin-top: 0;
+        }
+        .report-schedule .total-hours {
+            text-align: left;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            color: #2c5aa0;
+        }
+        .report-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>نظام إدارة مناوبات المرتب</h1>
+            <p>نظام متطور لإدارة وتنظيم مناوبات الخدمات الطبية</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('officers')">بيانات المرتب</button>
+            <button class="tab" onclick="showTab('schedule')">جدول المناوبات</button>
+            <button class="tab" onclick="showTab('summary')">الملخص الأسبوعي</button>
+            <button class="tab" onclick="showTab('analytics')">🤖 التحليلات الذكية</button>
+        </div>
+
+        <div id="officers" class="tab-content active">
+            <h2 style="margin-bottom: 20px; color: #2c5aa0;">ادارة بيانات المرتب</h2>
+
+            <!-- Search Bar -->
+            <div style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 12px; display: flex; gap: 10px; align-items: center;">
+                <label for="searchInput" style="font-weight: bold;">بحث بالرقم العسكري:</label>
+                <input type="text" id="searchInput" placeholder="أدخل الرقم..." style="width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <button class="btn" onclick="searchPersonnel()" style="background: linear-gradient(45deg, #667eea, #764ba2);">بحث</button>
+            </div>
+
+            <div class="page-actions" style="display: flex; gap: 15px; margin-bottom: 20px; justify-content: flex-end;">
+                <button class="btn" onclick="printActiveView()" style="background: linear-gradient(45deg, #17a2b8, #117a8b);">🖨️ طباعة</button>
+                <button class="btn" onclick="exportToPDF()" style="background: linear-gradient(45deg, #dc3545, #c82333);">📄 تصدير PDF</button>
+            </div>
+
+            <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px;">
+                <!-- Form Container -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; flex: 2;">
+                    <h3 style="margin-bottom: 15px; color: #333;">اضافه مرتب</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label>الرقم العسكري</label>
+                            <input type="text" id="officerNumber" placeholder="أدخل الرقم العسكري">
+                        </div>
+                        <div class="form-group">
+                            <label>الاسم الكامل</label>
+                            <input type="text" id="officerName" placeholder="أدخل الاسم الكامل">
+                        </div>
+                        <div class="form-group">
+                            <label>الفئة</label>
+                            <div style="display: flex; gap: 20px;">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="radio" name="personnelType" value="officers" onchange="updateRankOptions()" checked> ضباط</label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="radio" name="personnelType" value="individuals" onchange="updateRankOptions()"> أفراد</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>الرتبة</label>
+                            <select id="officerRank">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>الصنف</label>
+                            <select id="officerClass">
+                                <option value="">اختر الصنف</option>
+                                <option value="ممرض قانوني">ممرض قانوني</option>
+                                <option value="ممرض مشارك">ممرض مشارك</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>السكن</label>
+                            <input type="text" id="officerSakan" placeholder="أدخل السكن">
+                        </div>
+                        <div class="form-group">
+                            <label>رقم الهاتف</label>
+                            <input type="tel" id="officerPhone" placeholder="أدخل رقم الهاتف">
+                        </div>
+                        <div class="form-group">
+                            <label>التصنيف الفني</label>
+                            <input type="text" id="officerTechClass" placeholder="أدخل التصنيف الفني">
+                        </div>
+                        <div class="form-group">
+                            <label>الصورة الشخصية</label>
+                            <input type="file" id="officerPhotoInput" accept="image/*" onchange="previewPhoto(event)">
+                            <img id="photoPreview" src="" alt="Photo Preview" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 50%;">
+                        </div>
+                    </div>
+                    <button class="btn" id="mainActionButton" onclick="addPersonnel()">اضافه مرتب</button>
+                </div>
+
+                <!-- Tools Container -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; flex: 1;">
+                    <h3 style="margin-bottom: 15px; color: #333;">ادوات مهمه</h3>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <button class="btn" onclick="exportToExcel()" style="background: linear-gradient(45deg, #28a745, #20c997);">
+                            📊 تصدير إلى Excel/CSV
+                        </button>
+                        <button class="btn" onclick="importFromExcel()" style="background: linear-gradient(45deg, #007bff, #0056b3);">
+                            📥 استيراد من Excel/CSV
+                        </button>
+                        <button class="btn" onclick="openInstructionsModal()" style="background: linear-gradient(45deg, #17a2b8, #117a8b);">
+                            📖 تعليمات البرنامج
+                        </button>
+                    </div>
+                    <p style="margin-top: 10px; color: #666; font-size: 0.9em;">
+                        استخدم هذه الأدوات للتكامل مع ملفات Excel الموجودة
+                    </p>
+                </div>
+            </div>
+
+            <!-- Filters for Officer Grid -->
+            <div style="margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 12px; display: flex; gap: 20px; align-items: center;">
+                <label for="classFilterOfficers" style="font-weight: bold;">تصفية حسب الصنف:</label>
+                <select id="classFilterOfficers" onchange="updateOfficersGrid()" style="padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                    <option value="all">الكل</option>
+                    <option value="ممرض قانوني">ممرض قانوني</option>
+                    <option value="ممرض مشارك">ممرض مشارك</option>
+                    <option value="weekly_stoppages">توقيفات الاسبوع</option>
+                </select>
+            </div>
+
+            <div class="officers-grid" id="officersGrid"></div>
+
+            <table class="schedule-table print-only-table">
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>الرقم العسكري</th>
+                        <th>الرتبة</th>
+                        <th>الاسم الكامل</th>
+                        <th>الفئة</th>
+                        <th>الصنف</th>
+                        <th>السكن</th>
+                        <th>رقم الهاتف</th>
+                        <th>التصنيف الفني</th>
+                    </tr>
+                </thead>
+                <tbody id="officersTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="schedule" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #2c5aa0;">جدول المناوبات الأسبوعية</h2>
+
+            <div class="page-actions" style="display: flex; gap: 15px; margin-bottom: 20px; justify-content: flex-end;">
+                <button class="btn" onclick="printActiveView()" style="background: linear-gradient(45deg, #17a2b8, #117a8b);">🖨️ طباعة</button>
+                <button class="btn" onclick="exportToPDF()" style="background: linear-gradient(45deg, #dc3545, #c82333);">📄 تصدير PDF</button>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 20px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <label for="fromDate" style="font-weight: bold;">من تاريخ:</label>
+                <input type="date" id="fromDate" name="fromDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit;">
+                <label for="toDate" style="font-weight: bold;">الى تاريخ:</label>
+                <input type="date" id="toDate" name="toDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit;">
+            </div>
+
+            <!-- Filters for Schedule Table -->
+            <div style="margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 12px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <label for="classFilterSchedule" style="font-weight: bold;">تصفية حسب الصنف:</label>
+                <select id="classFilterSchedule" onchange="updateScheduleTable()" style="padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                    <option value="all">الكل</option>
+                    <option value="ممرض قانوني">ممرض قانوني</option>
+                    <option value="ممرض مشارك">ممرض مشارك</option>
+                    <option value="weekly_stoppages">توقيفات الاسبوع</option>
+                </select>
+            </div>
+
+            <div class="success" id="scheduleAlert" style="display: none;"></div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 10px;">رموز المناوبات:</h4>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <span class="shift-1" style="padding: 5px 10px; border-radius: 5px;">1=صباحي</span>
+                    <span class="shift-2" style="padding: 5px 10px; border-radius: 5px;">2=ظهر</span>
+                    <span class="shift-3" style="padding: 5px 10px; border-radius: 5px;">3=مساء</span>
+                    <span class="shift-4" style="padding: 5px 10px; border-radius: 5px;">4=توقيفات</span>
+                </div>
+            </div>
+
+            <table class="schedule-table" id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>الرتبة</th>
+                        <th>الاسم</th>
+                        <th>الصنف</th>
+                        <th>الأحد</th>
+                        <th>الاثنين</th>
+                        <th>الثلاثاء</th>
+                        <th>الأربعاء</th>
+                        <th>الخميس</th>
+                        <th>الجمعة</th>
+                        <th>السبت</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody"></tbody>
+            </table>
+        </div>
+
+        <div id="summary" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #2c5aa0;">الملخص الأسبوعي للمناوبات</h2>
+
+            <div style="margin-bottom: 20px;">
+                <button class="btn" onclick="openAnalysisModal()" style="background: linear-gradient(45deg, #667eea, #764ba2);">📊 تحليل البيانات</button>
+            </div>
+
+            <div class="page-actions" style="display: flex; gap: 15px; margin-bottom: 20px; justify-content: flex-end;">
+                <button class="btn" onclick="printActiveView()" style="background: linear-gradient(45deg, #17a2b8, #117a8b);">🖨️ طباعة</button>
+                <button class="btn" onclick="exportToPDF()" style="background: linear-gradient(45deg, #dc3545, #c82333);">📄 تصدير PDF</button>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3 id="totalOfficers">0</h3>
+                    <p>اجمالي المرتب</p>
+                </div>
+                <div class="summary-card">
+                    <h3 id="class1Count">0</h3>
+                    <p>ممرض قانوني</p>
+                </div>
+                <div class="summary-card">
+                    <h3 id="class2Count">0</h3>
+                    <p>ممرض مشارك</p>
+                </div>
+                <div class="summary-card">
+                    <h3 id="totalHours">0</h3>
+                    <p>إجمالي التوقيفات</p>
+                </div>
+            </div>
+
+            <div class="week-summary">
+                <div class="class-section">
+                    <div class="class-title">ممرض قانوني</div>
+                    <div class="days-grid" id="class1Summary"></div>
+                </div>
+
+                <div class="class-section">
+                    <div class="class-title">ممرض مشارك</div>
+                    <div class="days-grid" id="class2Summary"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <h3 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                🤖 التحليلات الذكية والمتقدمة
+            </h3>
+
+            <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 30px;">
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = showAnalysis()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">📊</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">تحليل توزيع المناوبات</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">عرض تفصيلي لتوزيع المناوبات على مدار الأسبوع</div>
+                </div>
+
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = generateReport()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">📋</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">تقرير شامل</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">إنشاء تقرير مفصل عن الأداء والإحصائيات</div>
+                </div>
+
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = predictWorkload()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">🔮</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">توقع الأحمال</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">تنبؤ ذكي بالأحمال المستقبلية باستخدام الذكاء الاصطناعي</div>
+                </div>
+
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = optimizeSchedule()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">⚡</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">تحسين الجدول</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">اقتراحات ذكية لتحسين توزيع المناوبات</div>
+                </div>
+
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = performanceAnalysis()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">📈</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">تحليل الأداء</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">تقييم شامل لأداء النظام والكفاءة</div>
+                </div>
+
+                <div class="analytics-card" onclick="document.getElementById('analyticsResults').innerHTML = riskAssessment()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">⚠️</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">تقييم المخاطر</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">تحديد المخاطر المحتملة واقتراح الحلول</div>
+                </div>
+
+                <div class="analytics-card" onclick="printAllAnalytics()" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 25px; text-align: center; transition: all 0.3s ease; cursor: pointer;">
+                    <div class="analytics-icon" style="font-size: 3em; margin-bottom: 15px;">🖨️</div>
+                    <div class="analytics-title" style="color: #2c5aa0; font-size: 1.3em; font-weight: 600; margin-bottom: 10px;">طباعة كل التحليلات</div>
+                    <div class="analytics-description" style="color: #666; font-size: 0.95em;">تجميع وطباعة جميع التقارير والتحليلات الذكية</div>
+                </div>
+            </div>
+
+            <div id="analyticsResults" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 30px; margin-top: 30px;">
+                <h4 style="color: #2c5aa0; margin-bottom: 20px; font-size: 1.5em;">🔍 نتائج التحليل</h4>
+                <p style="color: #666; font-size: 1.1em;">اختر أحد أدوات التحليل أعلاه لعرض النتائج التفصيلية هنا...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let officers = [];
+        let schedule = {};
+        let notes = {};
+        let signatures = {};
+        let currentEditOfficerId = null;
+
+        // --- New Unified Printing Architecture ---
+
+        /**
+         * Initiates the printing process. It determines the active tab and calls the print function for its content.
+         */
+        function printActiveView() {
+            const activeTabContent = document.querySelector('.tab-content.active');
+            if (activeTabContent) {
+                printView(activeTabContent.id);
+            } else {
+                showErrorMessage("لم يتم العثور على تبويب فعال للطباعة.");
+            }
+        }
+
+        /**
+         * Initiates the printing process for a given element ID.
+         * It first asks the user if they want to add signatures.
+         * @param {string} contentId - The ID of the element to print.
+         */
+        function printView(contentId) {
+            const contentElement = document.getElementById(contentId);
+            if (!contentElement) {
+                console.error("Print content not found:", contentId);
+                showErrorMessage("لم يتم العثور على المحتوى للطباعة.");
+                return;
+            }
+
+            // Special handling for the analysis chart
+            if (contentId.includes('analysis')) { // More robust check
+                const canvas = document.getElementById('shiftChart');
+                if (!shiftChartInstance || !canvas) {
+                     showErrorMessage("لا يمكن طباعة التحليل قبل عرضه أولاً.");
+                     return;
+                }
+                const chartImageURL = shiftChartInstance.toBase64Image();
+                const img = new Image();
+                img.onload = () => {
+                    canvas.style.display = 'none';
+                    canvas.parentElement.insertBefore(img, canvas);
+                    // The element to print is the whole modal content
+                    const analysisModalContent = document.getElementById('analysisContent');
+                    proceedWithPrinting(analysisModalContent, () => {
+                        img.remove();
+                        canvas.style.display = 'block';
+                    });
+                };
+                img.src = chartImageURL;
+                img.style.maxWidth = '100%';
+            } else {
+                proceedWithPrinting(contentElement);
+            }
+        }
+
+        function proceedWithPrinting(contentElement, cleanupCallback = () => {}) {
+            if (confirm("هل تريد إضافة تواقيع للطباعة؟")) {
+                openSignatureModal(contentElement, cleanupCallback);
+            } else {
+                prepareAndPrint(contentElement, false, cleanupCallback);
+            }
+        }
+
+        function openSignatureModal(contentElement, cleanupCallback) {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`sigRank${i}`).value = signatures[`rank${i}`] || '';
+                document.getElementById(`sigTitle${i}`).value = signatures[`title${i}`] || '';
+                document.getElementById(`sigName${i}`).value = signatures[`name${i}`] || '';
+            }
+
+            const modal = document.getElementById('signatureModal');
+
+            // Use a specific button ID to avoid conflicts
+            const saveBtn = document.getElementById('saveAndPrintBtn');
+
+            // Clone and replace the button to remove old event listeners
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+            newSaveBtn.onclick = () => {
+                for (let i = 1; i <= 3; i++) {
+                    signatures[`rank${i}`] = document.getElementById(`sigRank${i}`).value;
+                    signatures[`title${i}`] = document.getElementById(`sigTitle${i}`).value;
+                    signatures[`name${i}`] = document.getElementById(`sigName${i}`).value;
+                }
+                closeSignatureModal();
+                prepareAndPrint(contentElement, true, cleanupCallback);
+            };
+
+            modal.style.display = 'flex';
+        }
+
+        function closeSignatureModal() {
+            document.getElementById('signatureModal').style.display = 'none';
+        }
+
+        /**
+         * Prepares the content and triggers the browser's print dialog.
+         * @param {HTMLElement | string} content - The element or HTML string to be printed.
+         * @param {boolean} withSignatures - Whether to append the signature block.
+         * @param {Function} [cleanupCallback] - A function to run after printing is done.
+         */
+        function prepareAndPrint(content, withSignatures = false, cleanupCallback) {
+            const printContainer = document.createElement('div');
+            printContainer.className = 'print-section-container';
+
+            // Add the date range header if printing the schedule tab or all analytics
+            const isSchedule = (typeof content === 'object' && content.id === 'schedule');
+            const isAllAnalytics = (typeof content === 'string');
+
+            if (isSchedule || isAllAnalytics) {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                if (fromDate && toDate) {
+                    const dateHeader = document.createElement('div');
+                    dateHeader.className = 'print-date-header';
+                    dateHeader.innerHTML = `جدول المناوبات للفترة من ${fromDate} إلى ${toDate}`;
+                    printContainer.appendChild(dateHeader);
+                }
+            }
+
+            if (typeof content === 'string') {
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = content;
+                printContainer.appendChild(contentDiv);
+            } else {
+                 const contentClone = content.cloneNode(true);
+                 printContainer.appendChild(contentClone);
+            }
+
+
+            if (withSignatures) {
+                // Use page-break-before: always to force signatures to a new page if needed
+                const signatureHTML = `
+                    <div style="display: flex; justify-content: space-around; text-align: center; font-size: 12px; font-weight: bold; color: #000; padding-top: 50px; margin-top: 50px; border-top: 2px solid #333; page-break-before: auto;">
+                        <div style="width: 30%;"><p>${signatures.rank1||'&nbsp;'}</p><p>${signatures.title1||'&nbsp;'}</p><p>${signatures.name1||'&nbsp;'}</p><p style="margin-top: 30px;">التوقيع: ...................</p></div>
+                        <div style="width: 30%;"><p>${signatures.rank2||'&nbsp;'}</p><p>${signatures.title2||'&nbsp;'}</p><p>${signatures.name2||'&nbsp;'}</p><p style="margin-top: 30px;">التوقيع: ...................</p></div>
+                        <div style="width: 30%;"><p>${signatures.rank3||'&nbsp;'}</p><p>${signatures.title3||'&nbsp;'}</p><p>${signatures.name3||'&nbsp;'}</p><p style="margin-top: 30px;">التوقيع: ...................</p></div>
+                    </div>`;
+
+                // For tables, add to tfoot. For others, append at the end.
+                const table = printContainer.querySelector('table:last-of-type');
+                if (table) {
+                    let tfoot = table.tFoot;
+                    if (!tfoot) tfoot = table.createTFoot();
+                    // Clear any existing footer content to avoid duplication
+                    tfoot.innerHTML = '';
+                    const row = tfoot.insertRow();
+                    const cell = row.insertCell();
+                    const headerCells = table.querySelectorAll('thead th');
+                    cell.colSpan = headerCells.length > 0 ? headerCells.length : 1;
+                    cell.innerHTML = signatureHTML;
+                    // Remove the border-top from the signature div since it's in a tfoot
+                    cell.querySelector('div').style.borderTop = 'none';
+                    cell.querySelector('div').style.paddingTop = '20px';
+                     row.style.borderTop = "2px solid #333";
+
+                } else {
+                    printContainer.insertAdjacentHTML('beforeend', signatureHTML);
+                }
+            }
+
+            document.body.appendChild(printContainer);
+            document.body.classList.add('printing');
+
+            // Use a timeout to ensure content is rendered before printing
+            setTimeout(() => {
+                window.print();
+
+                // Cleanup
+                document.body.removeChild(printContainer);
+                document.body.classList.remove('printing');
+                if (cleanupCallback) {
+                    cleanupCallback();
+                }
+            }, 250); // 250ms delay
+        }
+
+
+        const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const OFFICER_RANKS = ['مرشح', 'ملازم', 'ملازم/1', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد'];
+        const INDIVIDUAL_RANKS = ['مدني', 'جندي/2', 'جندي/1', 'عريف', 'رقيب', 'رقيب/1', 'وكيل', 'وكيل/1'];
+        const STOPPAGE_NOTES = [
+            'إجازة',
+            'اجازه سنويه',
+            'اجازه ابوه',
+            'اجازه امومه',
+            'مرضية',
+            'استراحه',
+            'استراحه سهر',
+            'مهمة',
+            'عيد',
+            'دوره داخليه',
+            'دوره خارجيه'
+        ];
+
+        function sortPersonnel(a, b) {
+            // Rule 1: Sort by Type ('officers' first)
+            if (a.type === 'officers' && b.type === 'individuals') {
+                return -1;
+            }
+            if (a.type === 'individuals' && b.type === 'officers') {
+                return 1;
+            }
+
+            // Rule 2: Sort by Rank (descending)
+            const ranks = (a.type === 'officers') ? OFFICER_RANKS : INDIVIDUAL_RANKS;
+            const rankA = ranks.indexOf(a.rank);
+            const rankB = ranks.indexOf(b.rank);
+
+            if (rankA !== rankB) {
+                return rankB - rankA; // Sort descending by index (higher rank first)
+            }
+
+            // Rule 3: Sort by Military Number (ascending)
+            return parseInt(a.number, 10) - parseInt(b.number, 10);
+        }
+
+        function updateRankOptions() {
+            const type = document.querySelector('input[name="personnelType"]:checked').value;
+            const rankSelect = document.getElementById('officerRank');
+            const ranks = (type === 'officers') ? OFFICER_RANKS : INDIVIDUAL_RANKS;
+
+            rankSelect.innerHTML = ''; // Clear existing options
+            ranks.forEach(rank => {
+                const option = document.createElement('option');
+                option.value = rank;
+                option.textContent = rank;
+                rankSelect.appendChild(option);
+            });
+        }
+
+
+        function exportToPDF() {
+            const activeTab = document.querySelector('.tab-content.active');
+            const tabTitle = activeTab.querySelector('h2').textContent;
+            const filename = `نظام المناوبات - ${tabTitle}.pdf`;
+
+            const opt = {
+                margin:       0.2,
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'legal', orientation: 'landscape' }
+            };
+
+            document.body.classList.add('pdf-export-mode');
+
+            html2pdf().from(activeTab).set(opt).save().then(function () {
+                document.body.classList.remove('pdf-export-mode');
+            }).catch(function (error) {
+                console.error('Error during PDF export:', error);
+                document.body.classList.remove('pdf-export-mode');
+                alert('حدث خطأ أثناء إنشاء ملف PDF.');
+            });
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'schedule') {
+                updateScheduleTable();
+            } else if (tabName === 'summary') {
+                updateSummary();
+            } else if (tabName === 'analytics') {
+                // Initialize analytics tab if needed
+            }
+        }
+
+        function previewPhoto(event) {
+            const reader = new FileReader();
+            reader.onload = function(){
+                const output = document.getElementById('photoPreview');
+                output.src = reader.result;
+                output.style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function resizeAndEncodeImage(file, maxSize, callback) {
+            const reader = new FileReader();
+            reader.onload = function(readerEvent) {
+                const image = new Image();
+                image.onload = function(imageEvent) {
+                    const canvas = document.createElement('canvas');
+                    let width = image.width;
+                    let height = image.height;
+
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height *= maxSize / width;
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width *= maxSize / height;
+                            height = maxSize;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg');
+                    callback(dataUrl);
+                }
+                image.src = readerEvent.target.result;
+            }
+            reader.onerror = function() {
+                callback(null);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function addPersonnel() {
+            const number = document.getElementById('officerNumber').value;
+            const name = document.getElementById('officerName').value;
+            const type = document.querySelector('input[name="personnelType"]:checked').value;
+            const rank = document.getElementById('officerRank').value;
+            const officerClass = document.getElementById('officerClass').value;
+            const sakan = document.getElementById('officerSakan').value;
+            const phone = document.getElementById('officerPhone').value;
+            const technicalClassification = document.getElementById('officerTechClass').value;
+            const photoFile = document.getElementById('officerPhotoInput').files[0];
+
+            if (!number || !name || !rank || !officerClass) {
+                showErrorMessage('يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+            if (officers.find(officer => officer.number === number)) {
+                showErrorMessage('الرقم العسكري موجود مسبقاً');
+                return;
+            }
+            if (phone && officers.find(officer => officer.phone === phone)) {
+                showErrorMessage('رقم الهاتف هذا مستخدم بالفعل لشخص آخر.');
+                return;
+            }
+
+            const processOfficer = (photoDataUrl = null) => {
+                const officer = {
+                    number, name, type, rank,
+                    class: officerClass, sakan, phone, technicalClassification,
+                    photo: photoDataUrl
+                };
+
+                officers.push(officer);
+                schedule[number] = {};
+                notes[number] = {};
+                days.forEach(day => {
+                    schedule[number][day] = '';
+                });
+
+                updateOfficersGrid();
+                clearForm(); // Also needs to clear the photo preview
+                showSuccessMessage('تم إضافة المرتب بنجاح');
+            };
+
+            if (photoFile) {
+                resizeAndEncodeImage(photoFile, 200, (dataUrl) => {
+                    if (dataUrl) {
+                        processOfficer(dataUrl);
+                    } else {
+                        showErrorMessage('لم يتم تحديد الصورة، سيتم إضافة المرتب بدون صورة.');
+                        processOfficer(); // Add officer without photo on error
+                    }
+                });
+            } else {
+                processOfficer(); // Add officer without a photo
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('officerNumber').value = '';
+            document.getElementById('officerName').value = '';
+            // Don't clear type, keep it as selected
+            updateRankOptions(); // Reset ranks to match the selected type
+            document.getElementById('officerClass').value = '';
+            document.getElementById('officerSakan').value = '';
+            document.getElementById('officerPhone').value = '';
+            document.getElementById('officerTechClass').value = '';
+
+            // Clear the photo input and preview
+            const photoInput = document.getElementById('officerPhotoInput');
+            photoInput.value = ''; // This clears the selected file
+            const photoPreview = document.getElementById('photoPreview');
+            photoPreview.src = '';
+            photoPreview.style.display = 'none';
+        }
+
+        function editOfficer(officerNumber) {
+            const officer = officers.find(o => o.number === officerNumber);
+            if (!officer) return;
+
+            currentEditOfficerId = officerNumber;
+
+            // Set type and update ranks first
+            document.querySelector(`input[name="personnelType"][value="${officer.type || 'officers'}"]`).checked = true;
+            updateRankOptions();
+
+            // Now set the rest of the form values
+            document.getElementById('officerNumber').value = officer.number;
+            document.getElementById('officerNumber').disabled = true;
+            document.getElementById('officerName').value = officer.name;
+            document.getElementById('officerRank').value = officer.rank;
+            document.getElementById('officerClass').value = officer.class;
+            document.getElementById('officerSakan').value = officer.sakan || '';
+            document.getElementById('officerPhone').value = officer.phone;
+            document.getElementById('officerTechClass').value = officer.technicalClassification;
+
+            // Handle photo preview
+            const photoPreview = document.getElementById('photoPreview');
+            if (officer.photo) {
+                photoPreview.src = officer.photo;
+                photoPreview.style.display = 'block';
+            } else {
+                photoPreview.src = '';
+                photoPreview.style.display = 'none';
+            }
+
+            const formContainer = document.querySelector('#officers .form-group').parentElement.parentElement;
+            formContainer.querySelector('h3').textContent = 'تعديل بيانات الضابط';
+
+            const actionButton = document.getElementById('mainActionButton');
+            actionButton.textContent = 'حفظ التعديلات';
+            actionButton.onclick = saveOfficerChanges;
+            actionButton.style.background = 'linear-gradient(45deg, #007bff, #0056b3)';
+
+            let cancelButton = formContainer.querySelector('#cancelButton');
+            if (!cancelButton) {
+                cancelButton = document.createElement('button');
+                cancelButton.id = 'cancelButton';
+                cancelButton.textContent = 'إلغاء';
+                cancelButton.className = 'btn';
+                cancelButton.style.background = 'linear-gradient(45deg, #6c757d, #5a6268)';
+                cancelButton.style.marginRight = '10px';
+                cancelButton.onclick = cancelEdit;
+                actionButton.parentElement.insertBefore(cancelButton, actionButton);
+            }
+
+            formContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function saveOfficerChanges() {
+            const officerIndex = officers.findIndex(o => o.number === currentEditOfficerId);
+            if (officerIndex === -1) return;
+
+            const newPhone = document.getElementById('officerPhone').value;
+            if (newPhone && officers.find(o => o.number !== currentEditOfficerId && o.phone === newPhone)) {
+                showErrorMessage('رقم الهاتف هذا مستخدم بالفعل لشخص آخر.');
+                return;
+            }
+
+            const photoFile = document.getElementById('officerPhotoInput').files[0];
+
+            const performUpdate = (photoData) => {
+                const updatedOfficer = {
+                    number: currentEditOfficerId,
+                    type: document.querySelector('input[name="personnelType"]:checked').value,
+                    name: document.getElementById('officerName').value,
+                    rank: document.getElementById('officerRank').value,
+                    class: document.getElementById('officerClass').value,
+                    sakan: document.getElementById('officerSakan').value,
+                    phone: document.getElementById('officerPhone').value,
+                    technicalClassification: document.getElementById('officerTechClass').value,
+                    photo: photoData
+                };
+
+                officers[officerIndex] = updatedOfficer;
+                updateOfficersGrid();
+                updateScheduleTable();
+                updateSummary();
+                cancelEdit();
+                showSuccessMessage('تم حفظ التعديلات بنجاح!');
+            };
+
+            if (photoFile) {
+                // If a new photo is selected, process it
+                resizeAndEncodeImage(photoFile, 200, (dataUrl) => {
+                    if (dataUrl) {
+                        performUpdate(dataUrl); // Update with the new photo
+                    } else {
+                        showErrorMessage('فشل تحديث الصورة، سيتم حفظ باقي التعديلات دون تغيير الصورة.');
+                        performUpdate(officers[officerIndex].photo); // Keep the old photo on failure
+                    }
+                });
+            } else {
+                // If no new photo is selected, just update with the existing photo data
+                performUpdate(officers[officerIndex].photo);
+            }
+        }
+
+        function cancelEdit() {
+            currentEditOfficerId = null;
+            document.getElementById('officerNumber').disabled = false;
+            clearForm();
+
+            const formContainer = document.querySelector('#officers .form-group').parentElement.parentElement;
+            formContainer.querySelector('h3').textContent = 'اضافه مرتب';
+
+            const actionButton = document.getElementById('mainActionButton');
+            actionButton.textContent = 'اضافه مرتب';
+            actionButton.onclick = addPersonnel;
+            actionButton.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+
+            const cancelButton = formContainer.querySelector('#cancelButton');
+            if (cancelButton) {
+                cancelButton.parentElement.removeChild(cancelButton);
+            }
+        }
+
+        function updateOfficersGrid() {
+            officers.sort(sortPersonnel);
+            const grid = document.getElementById('officersGrid');
+            const tableBody = document.getElementById('officersTableBody');
+            grid.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            const classFilter = document.getElementById('classFilterOfficers').value;
+
+            let filteredOfficers;
+
+            if (classFilter === 'weekly_stoppages') {
+                filteredOfficers = officers.filter(officer => {
+                    if (!schedule[officer.number]) return false;
+                    return days.every(day => schedule[officer.number][day] === '4');
+                });
+            } else {
+                 filteredOfficers = officers.filter(officer => {
+                    return classFilter === 'all' || officer.class === classFilter;
+                });
+            }
+
+
+            if (filteredOfficers.length === 0) {
+                grid.innerHTML = '<p>لا يوجد مرتب لعرضه حسب الفلتر المختار.</p>';
+                tableBody.innerHTML = '<tr><td colspan="9">لا يوجد مرتب لعرضه</td></tr>';
+                return;
+            }
+
+            filteredOfficers.forEach(officer => {
+                // Populate cards
+                const card = document.createElement('div');
+                card.className = 'officer-card';
+                const photoSrc = officer.photo || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                card.innerHTML = `
+                    <img src="${photoSrc}" alt="Photo of ${officer.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #ddd;">
+                    <h4 style="color: #2c5aa0; margin-bottom: 10px;">${officer.rank} ${officer.name}</h4>
+                    <p><strong>الرقم العسكري:</strong> ${officer.number}</p>
+                    <p><strong>الصنف:</strong> ${officer.class}</p>
+                    <p><strong>السكن:</strong> ${officer.sakan || ''}</p>
+                    <p><strong>الهاتف:</strong> ${officer.phone || ''}</p>
+                    <p><strong>التصنيف الفني:</strong> ${officer.technicalClassification || ''}</p>
+                    <div style="margin-top: 10px;">
+                        <button onclick="editOfficer('${officer.number}')" style="background: #ffc107; color: black; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">تعديل</button>
+                        <button onclick="removeOfficer('${officer.number}')" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px;">حذف</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                // Populate table (with new column order)
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td><img src="${photoSrc}" class="table-photo" alt="صورة شخصية"></td>
+                    <td>${officer.number}</td>
+                    <td>${officer.rank}</td>
+                    <td>${officer.name}</td>
+                    <td>${officer.type === 'officers' ? 'ضباط' : 'أفراد'}</td>
+                    <td>${officer.class}</td>
+                    <td>${officer.sakan || ''}</td>
+                    <td>${officer.phone || ''}</td>
+                    <td>${officer.technicalClassification || ''}</td>
+                `;
+            });
+        }
+
+        function removeOfficer(number) {
+            if (confirm('هل أنت متأكد من حذف هذا الضابط؟')) {
+                officers = officers.filter(officer => officer.number !== number);
+                delete schedule[number];
+                delete notes[number];
+                updateOfficersGrid();
+                updateScheduleTable();
+            }
+        }
+
+        function updateScheduleTable() {
+            officers.sort(sortPersonnel);
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '';
+
+            const classFilter = document.getElementById('classFilterSchedule').value;
+
+            let filteredOfficers;
+
+            if (classFilter === 'weekly_stoppages') {
+                filteredOfficers = officers.filter(officer => {
+                    if (!schedule[officer.number]) return false;
+                    // Check if all 7 days have shift '4'
+                    return days.every(day => schedule[officer.number][day] === '4');
+                });
+            } else {
+                filteredOfficers = officers.filter(o => classFilter === 'all' || o.class === classFilter);
+            }
+
+            filteredOfficers.forEach(officer => {
+                if (!schedule[officer.number]) schedule[officer.number] = {};
+                if (!notes[officer.number]) notes[officer.number] = {};
+
+                const row = document.createElement('tr');
+                const photoSrc = officer.photo || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                let rowHTML = `<td><img src="${photoSrc}" class="table-photo" alt="صورة شخصية"></td><td>${officer.rank}</td><td>${officer.name}</td><td>${officer.class}</td>`;
+
+                days.forEach(day => {
+                    const shift = schedule[officer.number][day] || '';
+                    let noteDropdownHTML = '';
+                    let printContent = shift || '-';
+
+                    if (shift === '4') {
+                        const currentNote = notes[officer.number][day] || '';
+                        // Format for multi-line print view
+                        printContent = currentNote ? `4<br>${currentNote}` : '4';
+
+                        let noteOptions = STOPPAGE_NOTES.map(note => `<option value="${note}" ${currentNote === note ? 'selected' : ''}>${note}</option>`).join('');
+                        noteDropdownHTML = `
+                            <select class="shift-select" onchange="updateNote('${officer.number}', '${day}', this)" style="margin-top: 5px;">
+                                <option value="">اختر السبب</option>
+                                ${noteOptions}
+                            </select>
+                        `;
+                    }
+                    rowHTML += `
+                        <td class="shift-${shift}">
+                            <select class="shift-select" onchange="updateShift('${officer.number}', '${day}', this)">
+                                <option value="">-</option>
+                                <option value="1" ${shift === '1' ? 'selected' : ''}>1</option>
+                                <option value="2" ${shift === '2' ? 'selected' : ''}>2</option>
+                                <option value="3" ${shift === '3' ? 'selected' : ''}>3</option>
+                                <option value="4" ${shift === '4' ? 'selected' : ''}>4</option>
+                            </select>
+                            <span class="print-only-shift">${printContent}</span>
+                            ${noteDropdownHTML}
+                        </td>
+                    `;
+                });
+
+                const generalNote = notes[officer.number]?.general || '';
+                rowHTML += `<td><input type="text" value="${generalNote}" onchange="saveNote('${officer.number}', this.value)" style="width:100%; border:none; background:transparent;"></td>`;
+                row.innerHTML = rowHTML;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateShift(officerNumber, day, selectElement) {
+            const shift = selectElement.value;
+            schedule[officerNumber][day] = shift;
+            const cell = selectElement.parentElement;
+            const printSpan = cell.querySelector('.print-only-shift');
+
+            // Update cell color
+            cell.className = `shift-${shift}`;
+
+            // Remove existing notes dropdown if it exists
+            const existingNoteDropdown = cell.querySelector('select[onchange*="updateNote"]');
+            if (existingNoteDropdown) {
+                existingNoteDropdown.remove();
+            }
+
+            // Clear the note for the day if the shift is not a stoppage
+            if (shift !== '4') {
+                if (notes[officerNumber]) {
+                    notes[officerNumber][day] = '';
+                }
+                if(printSpan) printSpan.innerHTML = shift || '-';
+
+            } else {
+                // Add notes dropdown for stoppages
+                const currentNote = notes[officerNumber]?.[day] || '';
+                let noteOptions = STOPPAGE_NOTES.map(note => `<option value="${note}" ${currentNote === note ? 'selected' : ''}>${note}</option>`).join('');
+                const noteDropdownHTML = `
+                    <select class="shift-select" onchange="updateNote('${officer.number}', '${day}', this)" style="margin-top: 5px;">
+                        <option value="">اختر السبب</option>
+                        ${noteOptions}
+                    </select>
+                `;
+                cell.insertAdjacentHTML('beforeend', noteDropdownHTML);
+
+                // Update the print-only span with the multi-line format
+                if(printSpan) {
+                     printSpan.innerHTML = currentNote ? `4<br>${currentNote}` : '4';
+                }
+            }
+
+            updateSummary();
+        }
+
+        function updateNote(officerNumber, day, selectElement) {
+            const note = selectElement.value;
+            if (!notes[officerNumber]) notes[officerNumber] = {};
+            notes[officerNumber][day] = note;
+
+            // Update the print-only span in the same cell with multi-line format
+            const cell = selectElement.parentElement;
+            const printSpan = cell.querySelector('.print-only-shift');
+            if (printSpan) {
+                printSpan.innerHTML = note ? `4<br>${note}` : '4';
+            }
+        }
+
+        function saveNote(officerNumber, note) {
+            if (!notes[officerNumber]) {
+                notes[officerNumber] = {};
+            }
+            // This is a simple implementation. We'll just save the whole text.
+            // A more complex version might save notes per day.
+            notes[officerNumber].general = note.trim();
+        }
+
+        function calculateTotalStoppages() {
+            let totalStoppages = 0;
+            officers.forEach(officer => {
+                if (schedule[officer.number]) {
+                    days.forEach(day => {
+                        if (schedule[officer.number][day] === '4') {
+                            totalStoppages++;
+                        }
+                    });
+                }
+            });
+            return totalStoppages;
+        }
+
+        function calculateOfficerHours(officerNumber) {
+            let shiftCount = 0;
+            const officerSchedule = schedule[officerNumber];
+            if (!officerSchedule) {
+                return 0;
+            }
+            days.forEach(day => {
+                const shift = officerSchedule[day];
+                if (shift === '1' || shift === '2' || shift === '3') {
+                    shiftCount++;
+                }
+            });
+            return shiftCount * 8; // Assuming 8 hours per shift
+        }
+
+        function updateSummary() {
+            document.getElementById('totalOfficers').textContent = officers.length;
+
+            const class1Officers = officers.filter(officer => officer.class === 'ممرض قانوني');
+            const class2Officers = officers.filter(officer => officer.class === 'ممرض مشارك');
+
+            document.getElementById('class1Count').textContent = class1Officers.length;
+            document.getElementById('class2Count').textContent = class2Officers.length;
+
+            const totalStoppages = calculateTotalStoppages();
+            document.getElementById('totalHours').textContent = totalStoppages; // Reusing the element
+
+            updateClassSummary('class1Summary', class1Officers);
+            updateClassSummary('class2Summary', class2Officers);
+        }
+
+        function updateClassSummary(containerId, classOfficers) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            days.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card';
+
+                let shift1Count = 0, shift2Count = 0, shift3Count = 0, shift4Count = 0;
+
+                classOfficers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1') shift1Count++;
+                    else if (shift === '2') shift2Count++;
+                    else if (shift === '3') shift3Count++;
+                    else if (shift === '4') shift4Count++;
+                });
+
+                dayCard.innerHTML = `
+                    <div class="day-name">${day}</div>
+                    <div class="shift-counts">
+                        <div class="shift-count shift-1">صباحي: ${shift1Count}</div>
+                        <div class="shift-count shift-2">ظهر: ${shift2Count}</div>
+                        <div class="shift-count shift-3">مساء: ${shift3Count}</div>
+                        <div class="shift-count shift-4">توقيفات: ${shift4Count}</div>
+                    </div>
+                `;
+
+                container.appendChild(dayCard);
+            });
+        }
+
+        function exportToExcel() {
+            try {
+                officers.sort(sortPersonnel);
+                const wb = XLSX.utils.book_new();
+
+                const officersData = [
+                    ['الرقم العسكري', 'الرتبة', 'الاسم الكامل', 'الفئة', 'الصنف', 'السكن', 'رقم الهاتف', 'التصنيف الفني', 'الصورة (Base64)']
+                ];
+                officers.forEach(officer => {
+                    officersData.push([
+                        officer.number, officer.rank, officer.name, officer.type,
+                        officer.class, officer.sakan, officer.phone, officer.technicalClassification,
+                        officer.photo || ''
+                    ]);
+                });
+                const ws_officers = XLSX.utils.aoa_to_sheet(officersData);
+                XLSX.utils.book_append_sheet(wb, ws_officers, 'بيانات الضباط');
+
+                const scheduleData = [
+                    ['الرقم العسكري', 'الاسم', 'الصنف', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'مجموع الساعات', 'ملاحظات']
+                ];
+
+                officers.forEach(officer => {
+                    const scheduleRow = [officer.number, officer.name, officer.class];
+                    const officerSchedule = schedule[officer.number] || {};
+
+                    days.forEach(day => {
+                        const shift = officerSchedule[day] || '';
+                        let shiftText = '';
+                        if (shift === '1') {
+                            shiftText = 'صباحي';
+                        } else if (shift === '2') {
+                            shiftText = 'ظهر';
+                        } else if (shift === '3') {
+                            shiftText = 'مساء';
+                        } else if (shift === '4') {
+                            const note = notes[officer.number]?.[day] || '';
+                            shiftText = note ? `توقيفات (${note})` : 'توقيفات';
+                        }
+                        scheduleRow.push(shiftText);
+                    });
+
+                    scheduleRow.push(calculateOfficerHours(officer.number));
+                    const generalNote = notes[officer.number]?.general || '';
+                    scheduleRow.push(generalNote);
+                    scheduleData.push(scheduleRow);
+                });
+
+                const ws_schedule = XLSX.utils.aoa_to_sheet(scheduleData);
+                XLSX.utils.book_append_sheet(wb, ws_schedule, 'جدول المناوبات');
+
+                // Add Signatures Sheet
+                const signaturesData = [
+                    ['key', 'value']
+                ];
+                Object.keys(signatures).forEach(key => {
+                    signaturesData.push([key, signatures[key]]);
+                });
+                const ws_signatures = XLSX.utils.aoa_to_sheet(signaturesData);
+                XLSX.utils.book_append_sheet(wb, ws_signatures, 'التواقيع');
+
+                // Add Settings Sheet for dates
+                const settingsData = [
+                    ['key', 'value'],
+                    ['fromDate', document.getElementById('fromDate').value],
+                    ['toDate', document.getElementById('toDate').value]
+                ];
+                const ws_settings = XLSX.utils.aoa_to_sheet(settingsData);
+                XLSX.utils.book_append_sheet(wb, ws_settings, 'الإعدادات');
+
+
+                XLSX.writeFile(wb, 'نظام_مناوبات_الضباط.xlsx');
+                showSuccessMessage('تم تصدير البيانات بنجاح إلى ملف Excel!');
+
+            } catch (error) {
+                console.error("Error details during Excel export:", error.message, error.stack);
+                alert(`حدث خطأ أثناء محاولة تصدير الملف: ${error.message}\n\nيرجى مراجعة الكونسول لمزيد من التفاصيل.`);
+            }
+        }
+
+        function importFromExcel() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx, .xls, .csv';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, {type: 'array'});
+
+                            // Import Officers
+                            const officersSheet = workbook.Sheets['بيانات الضباط'];
+                            if (!officersSheet) throw new Error('لم يتم العثور على ورقة "بيانات الضباط".');
+                            const importedOfficers = XLSX.utils.sheet_to_json(officersSheet);
+
+                            const tempOfficers = importedOfficers.map(row => ({
+                                number: String(row['الرقم العسكري']),
+                                name: String(row['الاسم الكامل'] || ''),
+                                type: String(row['الفئة'] || 'officers'),
+                                rank: String(row['الرتبة'] || ''),
+                                class: String(row['الصنف'] || ''),
+                                sakan: String(row['السكن'] || ''),
+                                phone: String(row['رقم الهاتف'] || ''),
+                                technicalClassification: String(row['التصنيف الفني'] || ''),
+                                photo: row['الصورة (Base64)'] || null
+                            }));
+
+                            // Import Schedule and Notes
+                            const scheduleSheet = workbook.Sheets['جدول المناوبات'];
+                            if (!scheduleSheet) throw new Error('لم يتم العثور على ورقة "جدول المناوبات".');
+                            const importedSchedule = XLSX.utils.sheet_to_json(scheduleSheet);
+
+                            const tempSchedule = {};
+                            const tempNotes = {};
+
+                            importedSchedule.forEach(row => {
+                                const officerNumber = String(row['الرقم العسكري']);
+                                tempSchedule[officerNumber] = {};
+                                tempNotes[officerNumber] = {};
+
+                                days.forEach(day => {
+                                    const shiftText = row[day] || '';
+                                    let shift = '';
+                                    let note = '';
+
+                                    if (shiftText.includes('توقيفات')) {
+                                        shift = '4';
+                                        const noteMatch = shiftText.match(/\((.*)\)/);
+                                        if (noteMatch && noteMatch[1]) {
+                                            note = noteMatch[1];
+                                        }
+                                    } else if (shiftText === 'صباحي') {
+                                        shift = '1';
+                                    } else if (shiftText === 'ظهر') {
+                                        shift = '2';
+                                    } else if (shiftText === 'مساء') {
+                                        shift = '3';
+                                    }
+
+                                    tempSchedule[officerNumber][day] = shift;
+                                    if(note) {
+                                        tempNotes[officerNumber][day] = note;
+                                    }
+                                });
+                                tempNotes[officerNumber]['general'] = row['ملاحظات'] || '';
+                            });
+
+                            // Commit changes to global state
+                            officers = tempOfficers;
+                            schedule = tempSchedule;
+                            notes = tempNotes;
+
+                            // Import Signatures (if the sheet exists)
+                            const signaturesSheet = workbook.Sheets['التواقيع'];
+                            if (signaturesSheet) {
+                                const importedSignatures = XLSX.utils.sheet_to_json(signaturesSheet, { header: 1 });
+                                const tempSignatures = {};
+                                // Start from 1 to skip header row
+                                for (let i = 1; i < importedSignatures.length; i++) {
+                                    const row = importedSignatures[i];
+                                    if (row && row.length >= 2) {
+                                        tempSignatures[row[0]] = row[1];
+                                    }
+                                }
+                                signatures = tempSignatures;
+                            }
+
+                            // Import Settings (if the sheet exists)
+                            const settingsSheet = workbook.Sheets['الإعدادات'];
+                            if (settingsSheet) {
+                                const importedSettings = XLSX.utils.sheet_to_json(settingsSheet);
+                                importedSettings.forEach(setting => {
+                                    if (setting.key === 'fromDate') {
+                                        document.getElementById('fromDate').value = setting.value || '';
+                                    }
+                                    if (setting.key === 'toDate') {
+                                        document.getElementById('toDate').value = setting.value || '';
+                                    }
+                                });
+                            }
+
+
+                            updateOfficersGrid();
+                            updateScheduleTable();
+                            updateSummary();
+                            showSuccessMessage('تم استيراد البيانات بنجاح!');
+
+                        } catch (error) {
+                            console.error("Error details during Excel import:", error.message, error.stack);
+                            alert(`حدث خطأ أثناء استيراد الملف: ${error.message}\n\nيرجى التأكد من أن الملف غير تالف وأن أسماء الأعمدة تطابق النموذج. لمزيد من التفاصيل، افتح الكونسول (F12).`);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            };
+            input.click();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+
+            const icon = document.createElement('span');
+            icon.className = 'toast-icon';
+            icon.textContent = type === 'success' ? '✅' : '❌';
+            toast.prepend(icon);
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        function showSuccessMessage(message) {
+            showToast(message, 'success');
+        }
+
+        function showErrorMessage(message) {
+            showToast(message, 'error');
+        }
+
+        function showScheduleAlert(message) {
+            const alert = document.getElementById('scheduleAlert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Initialize the system
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOfficersGrid();
+            updateScheduleTable();
+            updateSummary();
+            updateRankOptions();
+
+            // Add input listeners for numeric-only fields
+            document.getElementById('officerNumber').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+            document.getElementById('officerPhone').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+        });
+
+        function openInstructionsModal() {
+            document.getElementById('instructionsModal').style.display = 'flex';
+        }
+
+        function closeInstructionsModal() {
+            document.getElementById('instructionsModal').style.display = 'none';
+        }
+
+        function searchPersonnel() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+            if (!searchInput) {
+                showErrorMessage("يرجى إدخال رقم عسكري للبحث.");
+                return;
+            }
+            const person = officers.find(o => o.number === searchInput);
+            if (person) {
+                showReportCard(person);
+            } else {
+                showErrorMessage("لم يتم العثور على شخص بهذا الرقم العسكري.");
+            }
+        }
+
+        function showReportCard(person) {
+            const modalContent = document.getElementById('reportCardContent');
+
+            let scheduleRows = '';
+            days.forEach(day => {
+                const shift = schedule[person.number]?.[day] || '';
+                let shiftText = '-';
+                let shiftClass = '';
+                if (shift === '1') { shiftText = 'صباحي'; shiftClass = 'shift-1'; }
+                else if (shift === '2') { shiftText = 'ظهر'; shiftClass = 'shift-2'; }
+                else if (shift === '3') { shiftText = 'مساء'; shiftClass = 'shift-3'; }
+                scheduleRows += `<td class="${shiftClass}">${shiftText}</td>`;
+            });
+
+            const fromDateValue = document.getElementById('fromDate').value;
+            const toDateValue = document.getElementById('toDate').value;
+            const photoSrc = person.photo || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            const dateDisplay = (fromDateValue && toDateValue) ? `<p style="font-size: 1rem; color: #555;">للفترة من ${fromDateValue} إلى ${toDateValue}</p>` : '';
+
+            const reportCardHTML = `
+                <button class="modal-close-btn" onclick="closeReportCardModal()">&times;</button>
+                <div class="report-card-container">
+                    <div class="report-header">
+                        <img src="${photoSrc}" alt="الصورة الشخصية" class="table-photo" style="width: 100px; height: 100px; margin-bottom: 15px;">
+                        <h1>بطاقة تقرير المرتب</h1>
+                        <p>${person.rank} ${person.name}</p>
+                        ${dateDisplay}
+                    </div>
+                    <div class="report-body">
+                        <div class="report-details">
+                            <h3>التفاصيل الشخصية</h3>
+                            <p><strong>الرقم العسكري:</strong> ${person.number}</p>
+                            <p><strong>الفئة:</strong> ${person.type === 'officers' ? 'ضباط' : 'أفراد'}</p>
+                            <p><strong>الصنف:</strong> ${person.class}</p>
+                            <p><strong>رقم الهاتف:</strong> ${person.phone}</p>
+                            <p><strong>التصنيف الفني:</strong> ${person.technicalClassification}</p>
+                        </div>
+                        <div class="report-schedule">
+                            <h3>جدول المناوبات الأسبوعي</h3>
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr><th>الأحد</th><th>الاثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th><th>الجمعة</th><th>السبت</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>${scheduleRows}</tr>
+                                </tbody>
+                            </table>
+                            <p class="total-hours"><strong>مجموع الساعات:</strong> ${calculateOfficerHours(person.number)} ساعة</p>
+                        </div>
+                    </div>
+                    <div class="report-footer">
+                         <button class="btn" onclick="printView('reportCardContent')">🖨️ طباعة التقرير</button>
+                         <button class="btn" onclick="exportReportCardToPDF()" style="background: linear-gradient(45deg, #dc3545, #c82333);">📄 تصدير PDF</button>
+                    </div>
+                </div>
+            `;
+            modalContent.innerHTML = reportCardHTML;
+            document.getElementById('reportCardModal').style.display = 'flex';
+        }
+
+        function closeReportCardModal() {
+            document.getElementById('reportCardModal').style.display = 'none';
+        }
+
+        function printReportCard() {
+            handleSignatureAndPrint('reportCardContent');
+        }
+
+        function exportReportCardToPDF() {
+            const reportContent = document.querySelector('#reportCardModal .report-card-container');
+            const personName = reportContent.querySelector('p').textContent;
+
+            const opt = {
+                margin: 0.2,
+                filename: `تقرير - ${personName}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 3, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(reportContent).set(opt).save();
+        }
+
+        let shiftChartInstance = null;
+
+        function printAllAnalytics() {
+            let allContent = '';
+            allContent += showAnalysis();
+            allContent += generateReport();
+            allContent += predictWorkload();
+            allContent += optimizeSchedule();
+            allContent += performanceAnalysis();
+            allContent += riskAssessment();
+
+            // Use the prepareAndPrint function with the aggregated HTML string
+            prepareAndPrint(allContent, true);
+        }
+
+        function showAnalysis() {
+            // Calculate daily shift counts
+            const dailyCounts = {};
+            days.forEach(day => {
+                dailyCounts[day] = { shift1: 0, shift2: 0, shift3: 0, shift4: 0 };
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1') dailyCounts[day].shift1++;
+                    else if (shift === '2') dailyCounts[day].shift2++;
+                    else if (shift === '3') dailyCounts[day].shift3++;
+                    else if (shift === '4') dailyCounts[day].shift4++;
+                });
+            });
+
+            // Calculate efficiency for each day
+            const calculateDayEfficiency = (day) => {
+                const total = dailyCounts[day].shift1 + dailyCounts[day].shift2 + dailyCounts[day].shift3;
+                const totalOfficers = officers.length;
+                return totalOfficers > 0 ? Math.round((total / totalOfficers) * 100) : 0;
+            };
+
+            // Create the analysis display
+            let analysisHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    📊 تحليل توزيع المناوبات المتقدم
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            `;
+
+            days.forEach(day => {
+                const efficiency = calculateDayEfficiency(day);
+
+                analysisHTML += `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                        <h3 style="font-size: 1.5em; margin-bottom: 20px; color: #FFD700;">${day}</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+                                <div style="color: #4CAF50; font-size: 1.2em; font-weight: bold;">صباحي: ${dailyCounts[day].shift1}</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+                                <div style="color: #2196F3; font-size: 1.2em; font-weight: bold;">ظهر: ${dailyCounts[day].shift2}</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+                                <div style="color: #FF9800; font-size: 1.2em; font-weight: bold;">مساء: ${dailyCounts[day].shift3}</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+                                <div style="color: #F44336; font-size: 1.2em; font-weight: bold;">توقيفات: ${dailyCounts[day].shift4}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                            <div style="color: #FFD700; font-size: 2em; font-weight: bold; margin-bottom: 5px;">${efficiency}%</div>
+                            <div style="font-size: 1em;">الكفاءة</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            analysisHTML += `</div></div>`;
+            return analysisHTML;
+        }
+
+        function closeAnalysisModal() {
+            document.getElementById('analysisModal').style.display = 'none';
+        }
+
+        function exportAnalysisToPDF() {
+            if (!shiftChartInstance) return;
+
+            const chartImageURL = shiftChartInstance.toBase64Image();
+
+            // Create a temporary, off-screen container for the PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.width = '11in'; // Standard landscape width
+            pdfContainer.style.padding = '20px';
+            pdfContainer.innerHTML = `
+                <div style="text-align:center; margin-bottom: 20px;">
+                    <h1>تحليل المناوبات الأسبوعي</h1>
+                    <p>توزيع المناوبات على مدار الأسبوع</p>
+                </div>
+                <img src="${chartImageURL}" style="max-width: 100%;">
+            `;
+
+            const opt = {
+                margin: 0.5,
+                filename: 'تحليل_المناوبات.pdf',
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
+            };
+
+            html2pdf().from(pdfContainer).set(opt).save();
+        }
+
+        function printAnalysis() {
+            if (!shiftChartInstance) return;
+
+            const modal = document.getElementById('analysisModal');
+            const mainContainer = document.querySelector('.container');
+            const canvas = document.getElementById('shiftChart');
+            const chartImageURL = shiftChartInstance.toBase64Image();
+            const image = document.createElement('img');
+
+            // Set the onload handler BEFORE setting the src
+            image.onload = function() {
+                // This code runs ONLY after the image is loaded into memory
+
+                // Hide the canvas and show the image in its place
+                canvas.style.display = 'none';
+                canvas.parentElement.insertBefore(image, canvas.nextSibling);
+
+                // Isolate the modal for printing
+                mainContainer.classList.add('print-hidden');
+                modal.classList.add('print-target');
+
+                window.print();
+
+                // Clean up after printing
+                mainContainer.classList.remove('print-hidden');
+                modal.classList.remove('print-target');
+                canvas.style.display = 'block';
+                // Check if the image is still in the DOM before trying to remove it
+                if (image.parentElement) {
+                    image.parentElement.removeChild(image);
+                }
+            };
+
+            // Set styles and finally the src to trigger loading
+            image.src = chartImageURL;
+            image.style.maxWidth = '100%';
+            image.style.display = 'block';
+        }
+
+        // Smart Analytics Functions
+        function generateReport() {
+            // Calculate total hours and statistics
+            let totalHours = 0;
+            let totalStoppages = 0;
+            let totalOfficersWorking = 0;
+            const officerCount = officers.filter(o => o.type === 'officers').length;
+            const individualCount = officers.filter(o => o.type === 'individuals').length;
+
+            officers.forEach(officer => {
+                let officerHours = 0;
+                let officerStoppages = 0;
+                days.forEach(day => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1' || shift === '2' || shift === '3') {
+                        officerHours += 8; // 8 hours per shift
+                    } else if (shift === '4') {
+                        officerStoppages++;
+                    }
+                });
+                totalHours += officerHours;
+                totalStoppages += officerStoppages;
+                if (officerHours > 0) totalOfficersWorking++;
+            });
+
+            const averageHoursPerOfficer = officers.length > 0 ? (totalHours / officers.length).toFixed(1) : 0;
+            const overallEfficiency = officers.length > 0 ? Math.round((totalOfficersWorking / officers.length) * 100) : 0;
+            const stoppageRate = officers.length > 0 ? Math.round((totalStoppages / (officers.length * 7)) * 100) : 0;
+
+            // Generate realistic smart recommendations based on actual data
+            let recommendations = [];
+
+            if (stoppageRate > 50) {
+                recommendations.push("• معدل التوقيفات مرتفع جداً - يجب مراجعة الأسباب فوراً");
+                recommendations.push("• يُنصح بوضع خطة لتقليل التوقيفات غير الضرورية");
+            } else if (stoppageRate > 30) {
+                recommendations.push("• معدل التوقيفات أعلى من المعدل المثالي - مراجعة مطلوبة");
+                recommendations.push("• تحسين توزيع المناوبات لتقليل الضغط على الموظفين");
+            } else if (stoppageRate > 15) {
+                recommendations.push("• معدل التوقيفات ضمن المعدل المقبول");
+                recommendations.push("• يمكن تحسين التوزيع لزيادة الكفاءة");
+            } else {
+                recommendations.push("• معدل التوقيفات ممتاز - استمر على هذا المستوى");
+                recommendations.push("• التوزيع الحالي يحقق كفاءة عالية");
+            }
+
+            if (averageHoursPerOfficer < 20) {
+                recommendations.push("• متوسط ساعات العمل منخفض - يمكن زيادة المناوبات");
+            } else if (averageHoursPerOfficer > 45) {
+                recommendations.push("• متوسط ساعات العمل مرتفع - قد يؤدي للإرهاق");
+            } else {
+                recommendations.push("• متوسط ساعات العمل مناسب ومتوازن");
+            }
+
+            if (overallEfficiency < 60) {
+                recommendations.push("• الكفاءة العامة منخفضة - يحتاج تحسين شامل");
+            } else if (overallEfficiency < 80) {
+                recommendations.push("• الكفاءة العامة جيدة مع إمكانية للتحسين");
+            } else {
+                recommendations.push("• الكفاءة العامة ممتازة - حافظ على هذا الأداء");
+            }
+
+            const reportHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    📋 التقرير الشامل والذكي
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: linear-gradient(135deg, #28a745, #20c997); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">إجمالي الساعات</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${totalHours}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">ساعة عمل</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">متوسط الساعات للفرد</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${averageHoursPerOfficer}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">ساعة/أسبوع</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #dc3545, #c82333); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(220, 53, 69, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">إجمالي التوقيفات</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${totalStoppages}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">توقيف (${stoppageRate}%)</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fd7e14, #e55a4e); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(253, 126, 20, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">الكفاءة العامة</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${overallEfficiency}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">كفاءة النظام</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; margin-top: 20px;">
+                    <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">عدد الضباط</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${officerCount}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">ضابط</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">عدد الأفراد</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${individualCount}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">فرد</div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #343a40, #5a6268); border-radius: 20px; padding: 30px; color: white; margin-top: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">💡 توصيات ذكية</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        ${recommendations.join('<br>')}
+                    </div>
+                </div>
+                </div>
+            `;
+            return reportHTML;
+        }
+
+        function predictWorkload() {
+            // Calculate current workload patterns
+            let totalWorkingDays = 0;
+            let totalStoppageDays = 0;
+            let busyDays = [];
+            let lightDays = [];
+
+            days.forEach(day => {
+                let workingCount = 0;
+                let stoppageCount = 0;
+
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1' || shift === '2' || shift === '3') {
+                        workingCount++;
+                    } else if (shift === '4') {
+                        stoppageCount++;
+                    }
+                });
+
+                totalWorkingDays += workingCount;
+                totalStoppageDays += stoppageCount;
+
+                const utilization = officers.length > 0 ? (workingCount / officers.length) * 100 : 0;
+
+                if (utilization > 75) {
+                    busyDays.push(day);
+                } else if (utilization < 40) {
+                    lightDays.push(day);
+                }
+            });
+
+            // Calculate realistic predictions based on current data
+            const currentUtilization = officers.length > 0 ? Math.round((totalWorkingDays / (officers.length * 7)) * 100) : 0;
+            const stoppageRate = officers.length > 0 ? Math.round((totalStoppageDays / (officers.length * 7)) * 100) : 0;
+
+            // Realistic trend prediction based on current patterns
+            let trendDirection = 'مستقر';
+            let predictedChange = 0;
+            let futureUtilization = currentUtilization;
+
+            if (stoppageRate > 40) {
+                trendDirection = 'تنازلي';
+                predictedChange = -Math.round(stoppageRate * 0.1); // Decrease based on high stoppages
+                futureUtilization = Math.max(currentUtilization + predictedChange, 20);
+            } else if (stoppageRate < 15 && currentUtilization < 80) {
+                trendDirection = 'تصاعدي';
+                predictedChange = Math.round((80 - currentUtilization) * 0.2); // Gradual increase
+                futureUtilization = Math.min(currentUtilization + predictedChange, 85);
+            } else {
+                predictedChange = Math.round((Math.random() - 0.5) * 10); // Small random variation
+                futureUtilization = Math.max(Math.min(currentUtilization + predictedChange, 90), 30);
+            }
+
+            // Calculate prediction accuracy based on data consistency
+            let accuracy = 85; // Base accuracy
+            if (officers.length < 5) accuracy -= 15; // Less data = less accuracy
+            if (stoppageRate > 50) accuracy -= 10; // High variability = less accuracy
+            if (busyDays.length === 0 && lightDays.length === 0) accuracy += 10; // Consistent pattern = higher accuracy
+
+            const predictionHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    🔮 توقع الأحمال المستقبلية
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">الاتجاه المتوقع</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${trendDirection}</div>
+                        <div style="font-size: 1em; opacity: 0.9;">اتجاه الأحمال</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">معدل الاستغلال المتوقع</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${futureUtilization}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">من إجمالي الساعات المتاحة</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fd7e14, #e55a4e); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(253, 126, 20, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">دقة التنبؤ</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${accuracy}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">دقة النموذج</div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #28a745, #20c997); border-radius: 20px; padding: 30px; color: white; margin-top: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">📈 تحليل الاتجاهات</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• الاستغلال الحالي: ${currentUtilization}%</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• التغيير المتوقع: ${predictedChange >= 0 ? '+' : ''}${predictedChange}%</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• معدل التوقيفات الحالي: ${stoppageRate}%</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• الأيام الأكثر انشغالاً: ${busyDays.length > 0 ? busyDays.join(', ') : 'لا توجد أيام مزدحمة'}</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• الأيام الأقل انشغالاً: ${lightDays.length > 0 ? lightDays.join(', ') : 'لا توجد أيام خفيفة'}</p>
+                        <p style="font-size: 1.1em;">• التوصية: ${futureUtilization > 85 ? 'يُنصح بزيادة عدد الموظفين' : futureUtilization < 50 ? 'يمكن تحسين استغلال الموارد' : 'الوضع الحالي مناسب'}</p>
+                    </div>
+                </div>
+                </div>
+            `;
+            return predictionHTML;
+        }
+
+        function optimizeSchedule() {
+            // Analyze current schedule for optimization opportunities
+            let unbalancedDays = [];
+            let overloadedDays = [];
+            let underutilizedDays = [];
+            let strengths = [];
+            let improvements = [];
+
+            days.forEach(day => {
+                let workingCount = 0;
+                let stoppageCount = 0;
+                let shiftCounts = { '1': 0, '2': 0, '3': 0 };
+
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1' || shift === '2' || shift === '3') {
+                        workingCount++;
+                        shiftCounts[shift]++;
+                    } else if (shift === '4') {
+                        stoppageCount++;
+                    }
+                });
+
+                const utilization = officers.length > 0 ? (workingCount / officers.length) * 100 : 0;
+
+                if (utilization > 85) {
+                    overloadedDays.push(day);
+                } else if (utilization < 40) {
+                    underutilizedDays.push(day);
+                }
+
+                // Check for shift balance
+                const maxShift = Math.max(...Object.values(shiftCounts));
+                const minShift = Math.min(...Object.values(shiftCounts));
+                if (maxShift - minShift > 2) {
+                    unbalancedDays.push(day);
+                }
+            });
+
+            // Generate realistic strengths based on actual data
+            if (overloadedDays.length === 0) {
+                strengths.push("• لا توجد أيام محملة بشكل مفرط");
+            }
+            if (underutilizedDays.length === 0) {
+                strengths.push("• جميع الأيام تحقق استغلال مناسب للموارد");
+            }
+            if (unbalancedDays.length <= 2) {
+                strengths.push("• توزيع متوازن للمناوبات في معظم الأيام");
+            }
+            if (strengths.length === 0) {
+                strengths.push("• النظام يعمل ضمن المعايير الأساسية");
+            }
+
+            // Generate realistic improvement suggestions
+            if (overloadedDays.length > 0) {
+                improvements.push(`• تقليل الأحمال في أيام: ${overloadedDays.join(', ')}`);
+                improvements.push("• إعادة توزيع بعض المناوبات لتخفيف الضغط");
+            }
+            if (underutilizedDays.length > 0) {
+                improvements.push(`• زيادة الاستغلال في أيام: ${underutilizedDays.join(', ')}`);
+                improvements.push("• تحسين توزيع المناوبات لزيادة الكفاءة");
+            }
+            if (unbalancedDays.length > 2) {
+                improvements.push(`• تحسين توازن المناوبات في أيام: ${unbalancedDays.join(', ')}`);
+                improvements.push("• توزيع أكثر عدالة بين الفترات المختلفة");
+            }
+            if (improvements.length === 0) {
+                improvements.push("• النظام محسن بشكل جيد حالياً");
+                improvements.push("• يمكن المحافظة على الوضع الحالي");
+            }
+
+            // Calculate realistic optimization score
+            let optimizationScore = 85; // Base score
+            if (overloadedDays.length > 0) optimizationScore -= (overloadedDays.length * 10);
+            if (underutilizedDays.length > 0) optimizationScore -= (underutilizedDays.length * 8);
+            if (unbalancedDays.length > 2) optimizationScore -= ((unbalancedDays.length - 2) * 5);
+            optimizationScore = Math.max(optimizationScore, 40); // Minimum score
+
+            const optimizationHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    ⚡ نتائج تحسين الجدول
+                </h4>
+
+                <div style="background: linear-gradient(135deg, #28a745, #20c997); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3); margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 15px;">✅ نقاط القوة المحددة</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        ${strengths.join('<br>')}
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #fd7e14, #e55a4e); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(253, 126, 20, 0.3); margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 15px;">⚠️ مجالات التحسين المقترحة</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        ${improvements.join('<br>')}
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3); margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 15px;">💡 اقتراحات التحسين الذكية</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        • تطبيق نظام المناوبات الدورية لتحسين العدالة<br>
+                        • استخدام التوقيفات بشكل استراتيجي لتجنب الإرهاق<br>
+                        • إنشاء خطة احتياطية للحالات الطارئة<br>
+                        • مراجعة دورية للجدولة كل أسبوعين
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);">
+                    <h3 style="font-size: 1.5em; margin-bottom: 15px;">🎯 درجة التحسين المتوقعة</h3>
+                    <div style="font-size: 4em; font-weight: bold; margin-bottom: 10px;">${optimizationScore}%</div>
+                    <div style="font-size: 1.2em; opacity: 0.9;">تحسن متوقع في الكفاءة العامة</div>
+                </div>
+                </div>
+            `;
+            return optimizationHTML;
+        }
+
+        function performanceAnalysis() {
+            // Calculate detailed performance metrics
+            let totalHours = 0;
+            let totalStoppages = 0;
+            let totalOfficers = officers.length;
+            let workingOfficers = 0;
+            let shiftDistribution = { '1': 0, '2': 0, '3': 0, '4': 0 };
+            let dailyUtilization = [];
+
+            officers.forEach(officer => {
+                let officerHours = 0;
+                let hasWork = false;
+
+                days.forEach(day => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift) {
+                        shiftDistribution[shift]++;
+                        if (shift === '1' || shift === '2' || shift === '3') {
+                            officerHours += 8;
+                            hasWork = true;
+                        } else if (shift === '4') {
+                            totalStoppages++;
+                        }
+                    }
+                });
+
+                totalHours += officerHours;
+                if (hasWork) workingOfficers++;
+            });
+
+            // Calculate daily utilization rates
+            days.forEach(day => {
+                let dayWorking = 0;
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1' || shift === '2' || shift === '3') {
+                        dayWorking++;
+                    }
+                });
+                const dayUtilization = totalOfficers > 0 ? (dayWorking / totalOfficers) * 100 : 0;
+                dailyUtilization.push(dayUtilization);
+            });
+
+            // Calculate realistic performance indicators
+            const utilizationRate = totalOfficers > 0 ? Math.round((workingOfficers / totalOfficers) * 100) : 0;
+            const productivityRate = totalOfficers > 0 ? Math.round((totalHours / (totalOfficers * 7 * 8)) * 100) : 0;
+            const stoppageRate = totalOfficers > 0 ? Math.round((totalStoppages / (totalOfficers * 7)) * 100) : 0;
+            const averageUtilization = dailyUtilization.length > 0 ? Math.round(dailyUtilization.reduce((a, b) => a + b, 0) / dailyUtilization.length) : 0;
+
+            // Calculate shift balance score
+            const totalShifts = shiftDistribution['1'] + shiftDistribution['2'] + shiftDistribution['3'];
+            let balanceScore = 100;
+            if (totalShifts > 0) {
+                const idealPerShift = totalShifts / 3;
+                const variance = Math.abs(shiftDistribution['1'] - idealPerShift) +
+                               Math.abs(shiftDistribution['2'] - idealPerShift) +
+                               Math.abs(shiftDistribution['3'] - idealPerShift);
+                balanceScore = Math.max(100 - Math.round((variance / totalShifts) * 100), 60);
+            }
+
+            // Generate performance insights based on actual data
+            let insights = [];
+            if (utilizationRate >= 90) {
+                insights.push("• معدل الاستغلال ممتاز - جميع الموظفين نشطون");
+            } else if (utilizationRate >= 70) {
+                insights.push("• معدل الاستغلال جيد مع إمكانية للتحسين");
+            } else {
+                insights.push("• معدل الاستغلال منخفض - يحتاج مراجعة");
+            }
+
+            if (stoppageRate <= 15) {
+                insights.push("• معدل التوقيفات ممتاز ومناسب");
+            } else if (stoppageRate <= 30) {
+                insights.push("• معدل التوقيفات مقبول");
+            } else {
+                insights.push("• معدل التوقيفات مرتفع - يحتاج تقليل");
+            }
+
+            if (balanceScore >= 85) {
+                insights.push("• توزيع المناوبات متوازن بشكل ممتاز");
+            } else if (balanceScore >= 70) {
+                insights.push("• توزيع المناوبات جيد مع تحسينات بسيطة");
+            } else {
+                insights.push("• توزيع المناوبات يحتاج إعادة توازن");
+            }
+
+            const performanceHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    📈 تحليل الأداء المتقدم
+                </h4>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: linear-gradient(135deg, #28a745, #20c997); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">معدل الاستغلال</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${utilizationRate}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">من إجمالي الموظفين</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">معدل الإنتاجية</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${productivityRate}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">من الساعات المتاحة</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(111, 66, 193, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">جودة التوزيع</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${balanceScore}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">توازن المناوبات</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fd7e14, #e55a4e); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(253, 126, 20, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">متوسط الاستغلال اليومي</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px;">${averageUtilization}%</div>
+                        <div style="font-size: 1em; opacity: 0.9;">معدل يومي</div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #dc3545, #c82333); border-radius: 20px; padding: 30px; color: white; margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">📊 مؤشرات الأداء الرئيسية</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 1.8em; font-weight: bold;">${totalHours}</div>
+                            <div style="font-size: 0.9em; opacity: 0.9;">إجمالي ساعات العمل</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 1.8em; font-weight: bold;">${totalStoppages}</div>
+                            <div style="font-size: 0.9em; opacity: 0.9;">إجمالي التوقيفات</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 1.8em; font-weight: bold;">${workingOfficers}/${totalOfficers}</div>
+                            <div style="font-size: 0.9em; opacity: 0.9;">الموظفون النشطون</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 1.8em; font-weight: bold;">${stoppageRate}%</div>
+                            <div style="font-size: 0.9em; opacity: 0.9;">معدل التوقيفات</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #28a745, #20c997); border-radius: 20px; padding: 30px; color: white;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">💡 رؤى الأداء</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        ${insights.join('<br>')}
+                        <br>• متوسط ساعات العمل للفرد: ${totalOfficers > 0 ? (totalHours / totalOfficers).toFixed(1) : 0} ساعة/أسبوع
+                        <br>• كفاءة استغلال الوقت: ${productivityRate >= 70 ? 'عالية' : productivityRate >= 50 ? 'متوسطة' : 'منخفضة'}
+                    </div>
+                </div>
+                </div>
+            `;
+            return performanceHTML;
+        }
+
+        function riskAssessment() {
+            // Analyze risks based on current schedule data
+            let highRiskDays = [];
+            let mediumRiskDays = [];
+            let lowRiskDays = [];
+            let totalStoppages = 0;
+            let totalWorkingDays = 0;
+            let riskFactors = [];
+            let solutions = [];
+
+            days.forEach(day => {
+                let workingCount = 0;
+                let stoppageCount = 0;
+
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1' || shift === '2' || shift === '3') {
+                        workingCount++;
+                        totalWorkingDays++;
+                    } else if (shift === '4') {
+                        stoppageCount++;
+                        totalStoppages++;
+                    }
+                });
+
+                const utilization = officers.length > 0 ? (workingCount / officers.length) * 100 : 0;
+                const stoppageRatio = officers.length > 0 ? (stoppageCount / officers.length) * 100 : 0;
+
+                // Realistic risk assessment based on actual data
+                if (utilization < 30 || stoppageRatio > 70) {
+                    highRiskDays.push(day);
+                } else if (utilization < 50 || stoppageRatio > 50) {
+                    mediumRiskDays.push(day);
+                } else {
+                    lowRiskDays.push(day);
+                }
+            });
+
+            // Calculate realistic risk metrics
+            const stoppageRate = officers.length > 0 ? Math.round((totalStoppages / (officers.length * 7)) * 100) : 0;
+            const workingRate = officers.length > 0 ? Math.round((totalWorkingDays / (officers.length * 7)) * 100) : 0;
+
+            // Determine overall risk level based on actual data
+            let overallRiskLevel = 'منخفض';
+            let riskScore = 25; // Lower is better
+            let riskColor = '#28a745'; // Green for low risk
+            let textColor = '#ffffff'; // White text for all backgrounds
+
+            if (stoppageRate > 60 || highRiskDays.length > 3) {
+                overallRiskLevel = 'عالي';
+                riskScore = Math.min(75 + (stoppageRate - 60), 90);
+                riskColor = '#dc3545'; // Red for high risk
+            } else if (stoppageRate > 40 || highRiskDays.length > 1 || mediumRiskDays.length > 4) {
+                overallRiskLevel = 'متوسط';
+                riskScore = Math.min(45 + (stoppageRate - 40), 65);
+                riskColor = '#ffc107'; // Orange for medium risk
+            } else {
+                riskScore = Math.max(25, 25 + stoppageRate * 0.5);
+            }
+
+            // Generate realistic risk factors based on actual data
+            if (stoppageRate > 50) {
+                riskFactors.push('معدل التوقيفات مرتفع جداً - خطر على استمرارية العمل');
+                solutions.push('تقليل التوقيفات غير الضرورية فوراً');
+                solutions.push('مراجعة أسباب التوقيفات وإيجاد بدائل');
+            } else if (stoppageRate > 30) {
+                riskFactors.push('معدل التوقيفات أعلى من المعدل المثالي');
+                solutions.push('مراجعة وتحسين توزيع المناوبات');
+            }
+
+            if (highRiskDays.length > 0) {
+                riskFactors.push(`أيام عالية المخاطر: ${highRiskDays.join(', ')}`);
+                solutions.push('إعادة توزيع الأحمال في الأيام عالية المخاطر');
+            }
+
+            if (workingRate < 50) {
+                riskFactors.push('معدل العمل منخفض - قد يؤثر على الإنتاجية');
+                solutions.push('زيادة عدد المناوبات أو الموظفين');
+            }
+
+            if (mediumRiskDays.length > 4) {
+                riskFactors.push('عدد كبير من الأيام متوسطة المخاطر');
+                solutions.push('تحسين التوازن العام للجدولة');
+            }
+
+            // Add positive factors if risk is low
+            if (riskFactors.length === 0) {
+                riskFactors.push('معدل التوقيفات ضمن المعدل المقبول');
+                riskFactors.push('توزيع متوازن للمناوبات');
+                solutions.push('المحافظة على الوضع الحالي');
+                solutions.push('مراقبة دورية للتأكد من الاستقرار');
+            }
+
+            const riskHTML = `
+                <div style="page-break-after: always;">
+                <h4 style="color: #2c5aa0; margin-bottom: 30px; font-size: 2em; text-align: center;">
+                    ⚠️ تقييم المخاطر الذكي
+                </h4>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: ${riskColor}; border: 5px solid ${riskColor}; border-radius: 20px; padding: 25px; color: ${textColor}; text-align: center; box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px; color: ${textColor};">مستوى المخاطر العام</h3>
+                        <div style="font-size: 3em; font-weight: bold; margin-bottom: 10px; color: ${textColor};">${overallRiskLevel}</div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-top: 15px;">
+                            <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.3); border-radius: 5px; overflow: hidden;">
+                                <div style="width: ${riskScore}%; height: 100%; background: #fff; border-radius: 5px;"></div>
+                            </div>
+                            <div style="font-size: 0.9em; margin-top: 5px; color: ${textColor};">${riskScore}% مستوى المخاطر</div>
+                        </div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 20px; padding: 25px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(23, 162, 184, 0.3);">
+                        <h3 style="font-size: 1.3em; margin-bottom: 15px;">إحصائيات المخاطر</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center;">
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <div style="font-size: 1.5em; font-weight: bold;">${highRiskDays.length}</div>
+                                <div style="font-size: 0.8em;">أيام عالية المخاطر</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <div style="font-size: 1.5em; font-weight: bold;">${mediumRiskDays.length}</div>
+                                <div style="font-size: 0.8em;">أيام متوسطة المخاطر</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <div style="font-size: 1.5em; font-weight: bold;">${stoppageRate}%</div>
+                                <div style="font-size: 0.8em;">معدل التوقيفات</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <div style="font-size: 1.5em; font-weight: bold;">${workingRate}%</div>
+                                <div style="font-size: 0.8em;">معدل العمل</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #fd7e14, #e55a4e); border-radius: 20px; padding: 30px; color: white; margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">🔍 المخاطر المحددة والحلول</h3>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                        ${riskFactors.map((factor, index) => `
+                            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; border-right: 4px solid ${index < riskFactors.length/2 ? '#ff6b6b' : '#66bb6a'};">
+                                <h4 style="color: ${index < riskFactors.length/2 ? '#ff6b6b' : '#66bb6a'}; margin-bottom: 10px;">${factor}</h4>
+                                ${solutions[index] ? `<p style="margin-bottom: 10px;">الحل: ${solutions[index]}</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); border-radius: 20px; padding: 30px; color: white;">
+                    <h3 style="font-size: 1.5em; margin-bottom: 20px; text-align: center;">📋 توصيات الأمان</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: right;">
+                        ${stoppageRate > 50 ?
+                            `<p style="margin-bottom: 15px; font-size: 1.1em;">• إجراء مراجعة عاجلة لأسباب التوقيفات المرتفعة</p>
+                             <p style="margin-bottom: 15px; font-size: 1.1em;">• وضع خطة طوارئ لتغطية النقص في الموظفين</p>` :
+                            `<p style="margin-bottom: 15px; font-size: 1.1em;">• المحافظة على المستوى الحالي من الأداء</p>`
+                        }
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• مراقبة دورية لمعدلات التوقيفات والأداء</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• إنشاء خطة احتياطية للحالات الطارئة</p>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">• تدريب الموظفين على إدارة الأزمات</p>
+                        <p style="font-size: 1.1em;">• مراجعة دورية للجدولة كل أسبوعين</p>
+                    </div>
+                </div>
+                </div>
+            `;
+            return riskHTML;
+        }
+
+        function openAnalysisModal() {
+            // Calculate daily shift counts
+            const dailyCounts = {};
+            days.forEach(day => {
+                dailyCounts[day] = { shift1: 0, shift2: 0, shift3: 0, shift4: 0 };
+                officers.forEach(officer => {
+                    const shift = schedule[officer.number]?.[day];
+                    if (shift === '1') dailyCounts[day].shift1++;
+                    else if (shift === '2') dailyCounts[day].shift2++;
+                    else if (shift === '3') dailyCounts[day].shift3++;
+                    else if (shift === '4') dailyCounts[day].shift4++;
+                });
+            });
+
+            // Prepare chart data
+            const chartData = {
+                labels: days,
+                datasets: [
+                    {
+                        label: 'صباحي',
+                        data: days.map(day => dailyCounts[day].shift1),
+                        backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                        borderColor: 'rgba(76, 175, 80, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'ظهر',
+                        data: days.map(day => dailyCounts[day].shift2),
+                        backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                        borderColor: 'rgba(33, 150, 243, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'مساء',
+                        data: days.map(day => dailyCounts[day].shift3),
+                        backgroundColor: 'rgba(255, 152, 0, 0.8)',
+                        borderColor: 'rgba(255, 152, 0, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'توقيفات',
+                        data: days.map(day => dailyCounts[day].shift4),
+                        backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                        borderColor: 'rgba(244, 67, 54, 1)',
+                        borderWidth: 2
+                    }
+                ]
+            };
+
+            // Show modal
+            document.getElementById('analysisModal').style.display = 'flex';
+
+            // Create chart
+            const ctx = document.getElementById('shiftChart').getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (shiftChartInstance) {
+                shiftChartInstance.destroy();
+            }
+
+            shiftChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'توزيع المناوبات على أيام الأسبوع',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'عدد الموظفين'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'أيام الأسبوع'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeInstructionsModal()">&times;</button>
+            <div class="container">
+              <div class="header">
+                <h1>📚 دليل عمل برنامج إضافة المرتب</h1>
+                <p class="subtitle">دليلك الشامل لاستخدام النظام بكفاءة وسهولة</p>
+              </div>
+              <div class="content">
+                <div class="step step-1">
+                  <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h2>استيراد البيانات</h2>
+                  </div>
+                  <p>ابدأ رحلتك مع النظام من خلال استيراد بياناتك بسهولة ويسر</p>
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <span class="icon">📥</span>
+                      <strong>استيراد من Excel/CSV</strong>
+                      <p>اضغط على الزر وسيتم تحميل البيانات فوراً</p>
+                    </div>
+                    <div class="feature-item">
+                      <span class="icon">✅</span>
+                      <strong>تأكيد النجاح</strong>
+                      <p>رسالة تأكيد تظهر في أعلى الصفحة</p>
+                    </div>
+                    <div class="feature-item">
+                      <span class="icon">✏️</span>
+                      <strong>التعديل والحذف</strong>
+                      <p>تحكم كامل في بياناتك</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="step step-2">
+                  <div class="step-header">
+                    <div class="step-number">2</div>
+                    <h2>جدول المناوبات الأسبوعية</h2>
+                  </div>
+                  <p>نظم مناوباتك بدقة واحترافية عبر ثلاث فترات زمنية متميزة</p>
+                  <div class="shifts-grid">
+                    <div class="shift-card">
+                      <span class="icon">🌅</span>
+                      <h3>الفترة الصباحية</h3>
+                    </div>
+                    <div class="shift-card">
+                      <span class="icon">☀️</span>
+                      <h3>فترة الظهيرة</h3>
+                    </div>
+                    <div class="shift-card">
+                      <span class="icon">🌙</span>
+                      <h3>الفترة المسائية</h3>
+                    </div>
+                  </div>
+                  <p><strong>📅 حدد نطاق الأسبوع بدقة:</strong></p>
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <span class="icon">🗓️</span>
+                      <strong>بداية الأسبوع</strong>
+                      <p>يوم الأحد</p>
+                    </div>
+                    <div class="feature-item">
+                      <span class="icon">📆</span>
+                      <strong>نهاية الأسبوع</strong>
+                      <p>يوم السبت</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="step step-3">
+                  <div class="step-header">
+                    <div class="step-number">3</div>
+                    <h2>الملخص الأسبوعي للمناوبات</h2>
+                  </div>
+                  <p>احصل على رؤية شاملة ومنظمة لجميع المناوبات والتوزيعات الأسبوعية</p>
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <span class="icon">📊</span>
+                      <strong>ملخصات تفصيلية</strong>
+                      <p>عرض كامل للمرتب والصنوف</p>
+                    </div>
+                    <div class="feature-item">
+                      <span class="icon">📋</span>
+                      <strong>توزيع أيام الأسبوع</strong>
+                      <p>تنظيم واضح حسب الفترات</p>
+                    </div>
+                    <div class="feature-item">
+                      <span class="icon">👁️</span>
+                      <strong>عرض منظم</strong>
+                      <p>واجهة سهلة المتابعة</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="warning-box">
+                  <h3>تنبيه مهم قبل الطباعة أو التصدير</h3>
+                  <p><strong>من الصفحة الأولى (جدول البيانات) قم بالآتي:</strong></p>
+                  <p>• اضغط <strong>📊 تصدير إلى Excel/CSV</strong> للاحتفاظ بجميع البيانات الجديدة</p>
+                  <p>• <strong>صدّر نسخة محدثة بعد أي تعديل أو حذف</strong> لاسترجاعها لاحقاً واستكمال العمل</p>
+                </div>
+              </div>
+              <div class="footer">
+                <h3>🎯 في النهاية</h3>
+                <p>نتمنى لكم التوفيق في عملكم</p>
+                <p><strong>مع تحيات فريق العمل</strong></p>
+                <div class="team-members">
+                  <div class="member">
+                    <div class="rank">المقدم</div>
+                    <div class="name">حسام خريسات</div>
+                  </div>
+                  <div class="member">
+                    <div class="rank">الملازم/1</div>
+                    <div class="name">إبراهيم الصمادي</div>
+                  </div>
+                </div>
+                <p style="margin-top: 20px; font-size: 1.1rem;">
+                  <strong>من مرتبات الجيش العربي 🇯🇴</strong>
+                </p>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Card Modal -->
+    <div id="reportCardModal" class="modal-backdrop">
+        <div class="modal-content" id="reportCardContent">
+            <!-- Content will be injected by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div id="analysisModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 1200px; padding: 20px;">
+            <button class="modal-close-btn" onclick="closeAnalysisModal()">&times;</button>
+            <div id="analysisContent" class="report-card-container">
+                <div class="report-header">
+                    <h1>تحليل المناوبات الأسبوعي</h1>
+                    <p>توزيع المناوبات على مدار الأسبوع</p>
+                </div>
+                <canvas id="shiftChart" style="width:100%; max-height: 500px;"></canvas>
+                <div class="report-footer">
+                    <button class="btn" onclick="printView('analysisContent')">🖨️ طباعة التحليل</button>
+                    <button class="btn" onclick="exportAnalysisToPDF()" style="background: linear-gradient(45deg, #dc3545, #c82333);">📄 تصدير PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div id="signatureModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 900px;">
+            <button class="modal-close-btn" onclick="closeSignatureModal()">&times;</button>
+            <div class="report-card-container">
+                <div class="report-header">
+                    <h1>إضافة تواقيع</h1>
+                    <p>يرجى تعبئة بيانات التواقيع قبل الطباعة</p>
+                </div>
+                <div id="signature-form-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; padding: 20px 0;">
+                    <!-- Signature Block 1 -->
+                    <div class="signature-block">
+                        <h4 style="text-align: center; margin-bottom: 15px;">التوقيع الأول (يمين)</h4>
+                        <div class="form-group"><label>الرتبة:</label><input type="text" id="sigRank1" class="sig-input"></div>
+                        <div class="form-group"><label>المسمى الوظيفي:</label><input type="text" id="sigTitle1" class="sig-input"></div>
+                        <div class="form-group"><label>الاسم كاملا:</label><input type="text" id="sigName1" class="sig-input"></div>
+                    </div>
+                    <!-- Signature Block 2 -->
+                    <div class="signature-block">
+                        <h4 style="text-align: center; margin-bottom: 15px;">التوقيع الثاني (وسط)</h4>
+                        <div class="form-group"><label>الرتبة:</label><input type="text" id="sigRank2" class="sig-input"></div>
+                        <div class="form-group"><label>المسمى الوظيفي:</label><input type="text" id="sigTitle2" class="sig-input"></div>
+                        <div class="form-group"><label>الاسم كاملا:</label><input type="text" id="sigName2" class="sig-input"></div>
+                    </div>
+                    <!-- Signature Block 3 -->
+                    <div class="signature-block">
+                        <h4 style="text-align: center; margin-bottom: 15px;">التوقيع الثالث (يسار)</h4>
+                        <div class="form-group"><label>الرتبة:</label><input type="text" id="sigRank3" class="sig-input"></div>
+                        <div class="form-group"><label>المسمى الوظيفي:</label><input type="text" id="sigTitle3" class="sig-input"></div>
+                        <div class="form-group"><label>الاسم كاملا:</label><input type="text" id="sigName3" class="sig-input"></div>
+                    </div>
+                </div>
+                <div class="report-footer">
+                    <button id="saveAndPrintBtn" class="btn">💾 حفظ والمتابعة للطباعة</button>
+                    <button class="btn" onclick="closeSignatureModal()" style="background: linear-gradient(45deg, #6c757d, #5a6268);">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Initialize the system
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOfficersGrid();
+            updateScheduleTable();
+            updateSummary();
+            updateRankOptions();
+
+            // Add input listeners for numeric-only fields
+            document.getElementById('officerNumber').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+            document.getElementById('officerPhone').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+        });
+    </script>
+</body>
+</html>
